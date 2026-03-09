@@ -20,15 +20,23 @@ def json_to_csv(file_path):
 
                 fila = {
                     "city": guardar.get("city"),
-                    "date": guardar.get("date"),
-                    "temp_max": guardar.get("temp_max"),
-                    "temp_min": guardar.get("temp_min"),
-                    "precipitation": guardar.get("precipitation")
+                    "datetime": guardar.get("datetime"),
+                    "temperature": guardar.get("temperature"),
+                    "precipitation": guardar.get("precipitation"),
+                    "wind_speed": guardar.get("wind_speed"),
+                    "wind_direction": guardar.get("wind_direction")
                 }
 
                 out.append(fila)
 
-    fieldnames = ["city", "date", "temp_max", "temp_min", "precipitation"]
+    fieldnames = [
+        "city",
+        "datetime",
+        "temperature",
+        "precipitation",
+        "wind_speed",
+        "wind_direction"
+    ]
 
     os.makedirs("data/clean", exist_ok=True)
 

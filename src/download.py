@@ -27,7 +27,6 @@ def data_writing(file_path, data, mode="w"):
     print(f"Se guardaron {len(data)} registros en {file_path}")
 
 
-# fechas
 today = datetime.today().strftime("%Y-%m-%d")
 start_date = f"{datetime.today().year}-01-01"
 
@@ -43,7 +42,7 @@ for i, (city, coords) in enumerate(CITIES.items()):
         f"&longitude={lon}"
         f"&start_date={start_date}"
         f"&end_date={today}"
-        f"&daily=temperature_2m_max,temperature_2m_min,precipitation_sum"
+        f"&hourly=temperature_2m,precipitation,windspeed_10m,winddirection_10m"
         f"&timezone=auto"
     )
 
@@ -51,14 +50,15 @@ for i, (city, coords) in enumerate(CITIES.items()):
 
     results = []
 
-    for j, date in enumerate(weather_data["daily"]["time"]):
+    for j, time in enumerate(weather_data["hourly"]["time"]):
 
         record = {
             "city": city,
-            "date": date,
-            "temp_max": weather_data["daily"]["temperature_2m_max"][j],
-            "temp_min": weather_data["daily"]["temperature_2m_min"][j],
-            "precipitation": weather_data["daily"]["precipitation_sum"][j]
+            "datetime": time,
+            "temperature": weather_data["hourly"]["temperature_2m"][j],
+            "precipitation": weather_data["hourly"]["precipitation"][j],
+            "wind_speed": weather_data["hourly"]["windspeed_10m"][j],
+            "wind_direction": weather_data["hourly"]["winddirection_10m"][j]
         }
 
         results.append(record)
