@@ -3,21 +3,117 @@ import pandas as pd
 
 st.set_page_config(page_title="Legion Flight", layout="wide")
 
+# Ocultar header por defecto de Streamlit y añadir navbar custom
+st.markdown("""
+<style>
+    /* Ocultar menú hamburguesa y footer de Streamlit */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+
+    /* Navbar */
+    .navbar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        z-index: 9999;
+        background-color: #0e1117;
+        border-bottom: 1px solid #2e2e2e;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.6rem 2rem;
+        box-sizing: border-box;
+    }
+    .navbar-logo {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #ffffff;
+        text-decoration: none;
+    }
+    .navbar-logo span {
+        font-size: 1.5rem;
+    }
+    .navbar-links {
+        display: flex;
+        gap: 2.5rem;
+        align-items: center;
+    }
+    .navbar-links a {
+        color: #c0c0c0;
+        text-decoration: none;
+        font-size: 0.95rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        transition: color 0.2s;
+    }
+    .navbar-links a:hover {
+        color: #ffffff;
+    }
+    .navbar-spacer {
+        width: 150px;
+    }
+
+    /* Empujar el contenido debajo de la navbar */
+    .block-container {
+        padding-top: 4.5rem !important;
+    }
+</style>
+
+<div class="navbar">
+    <div class="navbar-logo">
+        <span>✈️</span> Legion Flight
+    </div>
+    <div class="navbar-links">
+        <a href="#buscar-vuelo">🔍 Buscar vuelo</a>
+        <a href="#como-funciona">⚙️ Cómo funciona</a>
+        <a href="#contacto">📩 Contacto</a>
+    </div>
+    <div class="navbar-spacer"></div>
+</div>
+""", unsafe_allow_html=True)
+
 # HEADER
-st.title("✈️ Legion Flight")
 st.markdown("### Descubre cómo será tu vuelo antes de despegar")
+st.markdown("*Convierte la incertidumbre en información: conoce las condiciones de tu vuelo y destino antes de embarcar.*")
 
 # SEPARADOR
 st.markdown("---")
 
-# BUSCADOR (como tu dibujo)
+# Lista de aeropuertos disponibles
+AEROPUERTOS = [
+    "Madrid Barajas",
+    "Barcelona El Prat",
+    "Palma de Mallorca",
+    "Málaga Costa del Sol",
+    "Alicante Elche",
+    "Gran Canaria",
+    "Tenerife Sur",
+    "Valencia",
+    "Sevilla",
+    "Bilbao",
+    "Ibiza",
+    "Lanzarote",
+    "Fuerteventura",
+    "Menorca",
+    "Santiago de Compostela",
+]
+
+# BUSCADOR
+st.markdown('<div id="buscar-vuelo"></div>', unsafe_allow_html=True)
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    origen = st.text_input("Ciudad / Aeropuerto salida")
+    origen = st.selectbox("Aeropuerto salida", AEROPUERTOS, index=0)
 
 with col2:
-    destino = st.text_input("Ciudad / Aeropuerto llegada")
+    destino = st.selectbox("Aeropuerto llegada", AEROPUERTOS, index=1)
 
 with col3:
     fecha = st.date_input("Fecha salida")
@@ -45,23 +141,34 @@ if buscar:
 
     st.dataframe(df, use_container_width=True)
 
-# LATERAL (como el sidebar dibujado)
-st.sidebar.title("⚙️ Filtros")
+# CÓMO FUNCIONA
+st.markdown('<div id="como-funciona"></div>', unsafe_allow_html=True)
+st.markdown("---")
+st.markdown("## ⚙️ Cómo funciona")
 
-precio_max = st.sidebar.slider("Precio máximo (€)", 0, 200, 100)
-hora = st.sidebar.selectbox("Horario preferido", ["Cualquiera", "Mañana", "Tarde"])
+col_a, col_b, col_c = st.columns(3)
+with col_a:
+    st.markdown("### 1. Busca")
+    st.write("Introduce tu origen, destino y fecha de vuelo.")
+with col_b:
+    st.markdown("### 2. Compara")
+    st.write("Revisa los vuelos disponibles con precios y horarios.")
+with col_c:
+    st.markdown("### 3. Decide")
+    st.write("Elige el vuelo que mejor se adapte a ti.")
 
-st.sidebar.markdown("---")
-st.sidebar.write("✈️ Opciones adicionales")
-st.sidebar.checkbox("Solo vuelos directos")
-st.sidebar.checkbox("Equipaje incluido")
+# CONTACTO
+st.markdown('<div id="contacto"></div>', unsafe_allow_html=True)
+st.markdown("---")
+st.markdown("## 📩 Contacto")
+st.write("¿Tienes dudas? Escríbenos a **contacto@legionflight.com**")
 
-# FOOTER tipo FAQ
+# FAQ
 st.markdown("---")
 st.markdown("## ❓ FAQ")
 
 st.write("""
-- ¿Puedo cambiar mi vuelo? → Sí  
-- ¿Incluye equipaje? → Depende de la tarifa  
-- ¿Hay cancelación gratuita? → En algunos casos  
+- ¿Puedo cambiar mi vuelo? → Sí
+- ¿Incluye equipaje? → Depende de la tarifa
+- ¿Hay cancelación gratuita? → En algunos casos
 """)
