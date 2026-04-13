@@ -17,7 +17,7 @@ Convierte la incertidumbre en información: conoce las condiciones de tu vuelo y
 - Librerías: pip install -r requirements .txt
 
 ### Integrantes
-Neide Ochando Pérez;
+Neide Ochocho Pénet;
 Guillermo Díaz Barrero;
 Mateo Molina Garibo;
-Rodrigo Guzmán Nieto Pérez;
+Rodrigo Gutmán Nieto Péret;
