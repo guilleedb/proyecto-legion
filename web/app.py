@@ -3,14 +3,13 @@ import pandas as pd
 
 st.set_page_config(page_title="Legion Flight", layout="wide")
 
-# HEADER
+
 st.title("✈️ Legion Flight")
 st.markdown("### Descubre cómo será tu vuelo antes de despegar")
 
-# SEPARADOR
+
 st.markdown("---")
 
-# BUSCADOR (como tu dibujo)
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
@@ -27,11 +26,11 @@ with col4:
 
 st.markdown("---")
 
-# RESULTADOS
+
 if buscar:
     st.subheader("✈️ Resultados de vuelos")
 
-    # Simulación de datos
+    
     data = {
         "Origen": [origen]*3,
         "Destino": [destino]*3,
@@ -45,7 +44,7 @@ if buscar:
 
     st.dataframe(df, use_container_width=True)
 
-# LATERAL (como el sidebar dibujado)
+
 st.sidebar.title("⚙️ Filtros")
 
 precio_max = st.sidebar.slider("Precio máximo (€)", 0, 200, 100)
@@ -56,7 +55,6 @@ st.sidebar.write("✈️ Opciones adicionales")
 st.sidebar.checkbox("Solo vuelos directos")
 st.sidebar.checkbox("Equipaje incluido")
 
-# FOOTER tipo FAQ
 st.markdown("---")
 st.markdown("## ❓ FAQ")
 
