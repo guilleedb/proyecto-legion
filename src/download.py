@@ -27,10 +27,6 @@ def data_writing(file_path, data, mode="w"):
     print(f"Se guardaron {len(data)} registros en {file_path}")
 
 
-today = datetime.today().strftime("%Y-%m-%d")
-start_date = f"{datetime.today().year}-01-01"
-
-
 for i, (city, coords) in enumerate(CITIES.items()):
 
     lat = coords["lat"]
@@ -40,8 +36,7 @@ for i, (city, coords) in enumerate(CITIES.items()):
         f"{BASE_URL}"
         f"?latitude={lat}"
         f"&longitude={lon}"
-        f"&start_date={start_date}"
-        f"&end_date={today}"
+        f"&forecast_days=7"
         f"&hourly=temperature_2m,precipitation,windspeed_10m,winddirection_10m"
         f"&timezone=auto"
     )
