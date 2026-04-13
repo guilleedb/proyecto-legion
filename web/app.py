@@ -13,11 +13,37 @@ st.markdown("---")
 # BUSCADOR (como tu dibujo)
 col1, col2, col3, col4 = st.columns(4)
 
+# Lista de aeropuertos de España
+aeropuertos = [
+    "Madrid - Barajas (MAD)",
+    "Barcelona - El Prat (BCN)",
+    "Málaga - Costa del Sol (AGP)",
+    "Palma de Mallorca (PMI)",
+    "Alicante (ALC)",
+    "Valencia (VLC)",
+    "Sevilla (SVQ)",
+    "Bilbao (BIO)",
+    "Gran Canaria (LPA)",
+    "Tenerife Norte (TFN)",
+    "Tenerife Sur (TFS)",
+    "Ibiza (IBZ)",
+    "Menorca (MAH)",
+    "Santiago (SCQ)",
+    "Asturias (OVD)",
+    "Zaragoza (ZAZ)"
+]
+
 with col1:
-    origen = st.text_input("Ciudad / Aeropuerto salida")
+    origen = st.selectbox(
+        "Ciudad / Aeropuerto salida",
+        aeropuertos
+    )
 
 with col2:
-    destino = st.text_input("Ciudad / Aeropuerto llegada")
+    destino = st.selectbox(
+        "Ciudad / Aeropuerto llegada",
+        aeropuertos
+    )
 
 with col3:
     fecha = st.date_input("Fecha salida")
