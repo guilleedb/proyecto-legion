@@ -1,24 +1,28 @@
 import streamlit as st
 import pandas as pd
-import sys
-import os
+import sys        # <--- ESTO DEBE ESTAR ANTES
+import os         # <--- ESTO TAMBIÉN
 import datetime
 import base64
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+# Ahora que ya importaste sys y os, ya puedes usarlos:
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
+
+# Ahora ya puedes importar tus archivos de la carpeta src
 from ayuda_weather import load_weather_csv, get_weather_at, get_available_dates, degrees_to_compass
 from flight_scoring import score_flight, score_to_rating
-
-
-def get_hero_image_base64():
-    img_path = os.path.join(os.path.dirname(__file__), "assets", "hero.jpg")
-    with open(img_path, "rb") as f:
-        return base64.b64encode(f.read()).decode()
+from avionstack import buscar_programacion_comercial, CIUDADES_IATA
 
 st.set_page_config(page_title="Legion Flight", layout="wide")
 
-ruta_imagen = os.path.join(os.path.dirname(__file__), "avion.jpeg")
-st.image(ruta_imagen, width=500)
+
+def get_avion_base64():
+    # Usamos tu archivo real
+    img_path = os.path.join(os.path.dirname(__file__), "avion.jpeg")
+    with open(img_path, "rb") as f:
+        return base64.b64encode(f.read()).decode()
+
+imagen_fondo_64 = get_avion_base64()
 
 # Cargar datos meteorológicos
 @st.cache_data
@@ -218,6 +222,97 @@ st.markdown("""
         font-weight: 600;
         color: white;
     }
+    /* Estilo específico para el botón de buscar */
+    div.stButton > button {
+        width: 100% !important;
+        height: 3.2em !important;
+        margin-top: 28px !important; /* Lo baja para alinearlo con el texto de arriba */
+        background-color: #2563eb !important; /* Azul profesional */
+        color: white !important;
+        font-weight: bold !important;
+        border-radius: 8px !important;
+        border: none !important;
+        transition: all 0.2s ease;
+    }
+
+    div.stButton > button:hover {
+        background-color: #1d4ed8 !important;
+        transform: translateY(-1px);
+        box-shadow: 0px 4px 12px rgba(37, 99, 235, 0.3);
+    }
+ /* Estilo del botón: lo subimos un poco para que no esté desalineado abajo */
+    div.stButton > button {
+        width: 100% !important;
+        height: 3.2em !important;
+        margin-top: 25px !important; /* Ajustado para que quede recto con los otros */
+        background-color: #2563eb !important;
+        color: white !important;
+        font-weight: bold !important;
+        border-radius: 8px !important;
+        border: none !important;
+    }
+/* Tarjeta de Vuelo Estilo Kayak */
+    .flight-card {
+        background-color: #ffffff;
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 15px;
+        border: 1px solid #e0e6ed;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: all 0.3s ease;
+        color: #1a2b49;
+    }
+
+    .flight-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 20px rgba(0,0,0,0.1);
+        border-color: #3b82f6;
+    }
+
+    .flight-info-main {
+        flex: 1;
+    }
+
+    .flight-time {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 2px;
+    }
+
+    .flight-route {
+        flex: 2;
+        text-align: center;
+        padding: 0 40px;
+    }
+
+    .route-line {
+        flex-grow: 1;
+        height: 2px;
+        background-color: #cbd5e0;
+        position: relative;
+        margin: 0 15px;
+    }
+
+    .plane-icon {
+        position: absolute;
+        top: -12px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 1.2rem;
+    }
+
+    .rating-box {
+        background-color: #2fb380;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 1.2rem;
+        text-align: center;
+        min-width: 90px;
+    }
 </style>
 
 <div class="navbar">
@@ -233,13 +328,9 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# HERO SECTION
-hero_b64 = get_hero_image_base64()
-
 st.markdown(f"""
 <div class="hero">
-    <img src="data:image/jpeg;base64,{hero_b64}" alt="Avión en vuelo">
-    <div class="hero-overlay"></div>
+    <img src="data:image/jpeg;base64,{imagen_fondo_64}" alt="Avión en vuelo">
 
     <!-- Tarjetas meteorológicas decorativas -->
     <div class="hero-weather">
@@ -310,43 +401,26 @@ AEROPUERTOS = [
 
 # BUSCADOR
 st.markdown('<div id="buscar-vuelo"></div>', unsafe_allow_html=True)
+
+# Creamos las columnas para los selectores
 col1, col2, col3, col4 = st.columns(4)
 
-# Lista de aeropuertos de España
-aeropuertos = [
-    "Madrid - Barajas (MAD)",
-    "Barcelona - El Prat (BCN)",
-    "Málaga - Costa del Sol (AGP)",
-    "Palma de Mallorca (PMI)",
-    "Alicante (ALC)",
-    "Valencia (VLC)",
-    "Sevilla (SVQ)",
-    "Bilbao (BIO)",
-    "Gran Canaria (LPA)",
-    "Tenerife Norte (TFN)",
-    "Tenerife Sur (TFS)",
-    "Ibiza (IBZ)",
-    "Menorca (MAH)",
-    "Santiago (SCQ)",
-    "Asturias (OVD)",
-    "Zaragoza (ZAZ)"
-]
-
 with col1:
+    # Usamos las llaves de CIUDADES_IATA (los nombres bonitos)
+    # La variable 'origen' guardará el nombre: ej. "Madrid Barajas"
     origen = st.selectbox(
         "Ciudad / Aeropuerto salida",
-        aeropuertos
+        options=list(CIUDADES_IATA.keys()),
+        index=0  # Selecciona Madrid por defecto
     )
 
 with col2:
+    # La variable 'destino' guardará el nombre: ej. "Barcelona El Prat"
     destino = st.selectbox(
         "Ciudad / Aeropuerto llegada",
-        aeropuertos
+        options=list(CIUDADES_IATA.keys()),
+        index=1  # Selecciona Barcelona por defecto
     )
-    origen = st.selectbox("Aeropuerto salida", AEROPUERTOS, index=0)
-
-with col2:
-    destino = st.selectbox("Aeropuerto llegada", AEROPUERTOS, index=1)
 
 with col3:
     fecha = st.date_input(
@@ -357,9 +431,8 @@ with col3:
     )
 
 with col4:
+    # Este botón activará la búsqueda real
     buscar = st.button("🔍 Buscar vuelos")
-
-st.markdown("---")
 
 # RESULTADOS
 VUELOS = [
@@ -372,58 +445,77 @@ if buscar:
     if origen == destino:
         st.error("El aeropuerto de origen y destino no pueden ser el mismo.")
     else:
-        st.subheader("✈️ Condiciones de vuelo")
+        # 1. Llamada a la API
+        vuelos_reales = buscar_programacion_comercial(origen, destino)
 
-        # Tarjetas meteorológicas resumen del día (hora punta: mediodía)
-        weather_origin = get_weather_at(df_weather, origen, fecha, 12)
-        weather_dest = get_weather_at(df_weather, destino, fecha, 12)
-
-        if weather_origin is None or weather_dest is None:
-            st.warning("No hay datos meteorológicos disponibles para la fecha seleccionada.")
+        if not vuelos_reales:
+            st.warning("No se encontraron vuelos comerciales programados.")
         else:
-            col_o, col_d = st.columns(2)
+            # 1. ORDENACIÓN (Esto va dentro del else, alineado con el st.warning)
+            for v in vuelos_reales:
+                partes = v['hora_salida'].split(':')
+                v['h_sort'] = int(partes[0])
+                v['m_sort'] = int(partes[1])
+            
+            vuelos_reales = sorted(vuelos_reales, key=lambda x: (x['h_sort'], x['m_sort']))
 
-            for col, weather, label in [(col_o, weather_origin, f"🛫 {origen}"), (col_d, weather_dest, f"🛬 {destino}")]:
-                with col:
-                    st.markdown(f"**{label}**")
-                    m1, m2, m3 = st.columns(3)
-                    m1.metric("🌡️ Temperatura", f"{weather['temperature']}°C")
-                    m2.metric("💨 Viento", f"{weather['wind_speed']} km/h", degrees_to_compass(weather['wind_direction']))
-                    m3.metric("🌧️ Precipitación", f"{weather['precipitation']} mm")
+            # 2. BUCLE ÚNICO (Solo un 'for', no dos)
+            for vuelo in vuelos_reales:
+                w_orig = get_weather_at(df_weather, origen, fecha, vuelo["hora_int"])
+                w_dest = get_weather_at(df_weather, destino, fecha, (vuelo["hora_int"] + 1) % 24)
 
-            st.markdown("---")
+                if w_orig and w_dest:
+                    result = score_flight(w_orig, w_dest)
+                    
+                    # Preparar datos seguros
+                    temp_orig = w_orig.get('temperature', 0)
+                    temp_dest = w_dest.get('temperature', 0)
+                    viento = w_orig.get('windspeed', w_orig.get('wind_speed', 0))
 
-            # Tabla de vuelos con condiciones
-            st.subheader("🕐 Vuelos disponibles")
+                    try:
+                        nota = float(result.get('rating', 0))
+                    except:
+                        nota = 0.0
 
-            for vuelo in VUELOS:
-                w_orig = get_weather_at(df_weather, origen, fecha, vuelo["salida"])
-                w_dest = get_weather_at(df_weather, destino, fecha, vuelo["llegada"])
-
-                if w_orig is None or w_dest is None:
-                    continue
-
-                result = score_flight(w_orig, w_dest)
-
-                col_h, col_info, col_score = st.columns([1, 2, 1])
-
-                with col_h:
-                    st.markdown(f"**{vuelo['franja']}**")
-                    st.write(f"{vuelo['salida_str']} → {vuelo['llegada_str']} ({vuelo['duracion']})")
-
-                with col_info:
-                    st.write(f"🛫 {origen}: {w_orig['temperature']}°C, 💨 {w_orig['wind_speed']} km/h, 🌧️ {w_orig['precipitation']} mm")
-                    st.write(f"🛬 {destino}: {w_dest['temperature']}°C, 💨 {w_dest['wind_speed']} km/h, 🌧️ {w_dest['precipitation']} mm")
-
-                with col_score:
-                    st.markdown(
-                        f'<span class="rating-badge" style="background-color:{result["color"]}">'
-                        f'{result["rating"]} ({result["flight_score"]})</span>',
-                        unsafe_allow_html=True,
-                    )
-
-                st.markdown("---")
-
+                    # --- Lógica de color que faltaba ---
+                    if nota >= 8:
+                        color_nota = "#28a745"
+                        etiqueta = "Excelente"
+                    elif nota >= 5:
+                        color_nota = "#ffc107"
+                        etiqueta = "Bueno"
+                    else:
+                        color_nota = "#dc3545"
+                        etiqueta = "Malo"
+                        
+                    # 3. DIBUJAR LA TARJETA
+                    st.markdown(f"""
+<div class="flight-card">
+    <div class="flight-info-main">
+        <div class="flight-time">{vuelo['hora_salida']}</div>
+        <div style="font-size: 0.9rem; color: #718096; font-weight: 600;">{vuelo['linea']}</div>
+        <div style="font-size: 0.8rem; color: #a0aec0;">{vuelo['vuelo']}</div>
+    </div>
+    <div class="flight-route">
+        <div style="display: flex; align-items: center; justify-content: center;">
+            <span style="font-size: 1.3rem; font-weight: 700;">{CIUDADES_IATA[origen]}</span>
+            <div class="route-line"><span class="plane-icon">✈️</span></div>
+            <span style="font-size: 1.3rem; font-weight: 700;">{CIUDADES_IATA[destino]}</span>
+        </div>
+        <div style="font-size: 0.8rem; color: #718096; margin-top: 8px;">Directo • Programado</div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 20px;">
+        <div style="text-align: right; color: #4a5568; font-size: 0.9rem;">
+            <div style="font-weight: 600;">🌡️ {temp_orig}°C / {temp_dest}°C</div>
+            <div style="font-size: 0.8rem;">💨 {viento} km/h</div>
+        </div>
+        <div class="rating-box" style="background-color: {color_nota};">
+            {nota:.1f}
+            <div style="font-size: 0.6rem; font-weight: 400; text-transform: uppercase; margin-top: 2px;">{etiqueta}</div>
+        </div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 # CÓMO FUNCIONA
 st.markdown('<div id="como-funciona"></div>', unsafe_allow_html=True)
 st.markdown("---")
