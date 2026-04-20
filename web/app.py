@@ -1,18 +1,30 @@
 import streamlit as st
 import pandas as pd
-import sys        # <--- ESTO DEBE ESTAR ANTES
-import os         # <--- ESTO TAMBIÉN
+import sys
+import os
 import datetime
 import base64
 
-# Ahora que ya importaste sys y os, ya puedes usarlos:
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
+# --- CONFIGURACIÓN DE RUTAS ---
+# Obtenemos la ruta absoluta de la carpeta donde está este archivo (app.py)
+current_dir = os.path.dirname(os.path.abspath(__file__))
+# Subimos un nivel para encontrar la carpeta 'src'
+project_root = os.path.abspath(os.path.join(current_dir, ".."))
+src_path = os.path.join(project_root, "src")
 
-# Ahora ya puedes importar tus archivos de la carpeta src
-from ayuda_weather import load_weather_csv, get_weather_at, get_available_dates, degrees_to_compass
-from flight_scoring import score_flight, score_to_rating
-from avionstack import buscar_programacion_comercial, CIUDADES_IATA
+# Añadimos 'src' al sistema para que Python encuentre tus archivos
+if src_path not in sys.path:
+    sys.path.insert(0, src_path)
 
+# --- IMPORTACIONES ---
+try:
+    from ayuda_weather import load_weather_csv, get_weather_at, get_available_dates, degrees_to_compass
+    from flight_scoring import score_flight, score_to_rating
+    from avionstack import buscar_programacion_comercial, CIUDADES_IATA
+except ModuleNotFoundError as e:
+    st.error(f"❌ Error crítico: No se encuentra el archivo en la carpeta src.")
+    st.info(f"Python está buscando en: {src_path}")
+    st.stop()
 st.set_page_config(page_title="Legion Flight", layout="wide")
 
 
@@ -304,7 +316,6 @@ st.markdown("""
     }
 
     .rating-box {
-        background-color: #2fb380;
         color: white;
         padding: 12px 20px;
         border-radius: 10px;
@@ -445,13 +456,12 @@ if buscar:
     if origen == destino:
         st.error("El aeropuerto de origen y destino no pueden ser el mismo.")
     else:
-        # 1. Llamada a la API
         vuelos_reales = buscar_programacion_comercial(origen, destino)
 
         if not vuelos_reales:
             st.warning("No se encontraron vuelos comerciales programados.")
         else:
-            # 1. ORDENACIÓN (Esto va dentro del else, alineado con el st.warning)
+            # Ordenar vuelos por hora
             for v in vuelos_reales:
                 partes = v['hora_salida'].split(':')
                 v['h_sort'] = int(partes[0])
@@ -459,63 +469,60 @@ if buscar:
             
             vuelos_reales = sorted(vuelos_reales, key=lambda x: (x['h_sort'], x['m_sort']))
 
-            # 2. BUCLE ÚNICO (Solo un 'for', no dos)
+            # Bucle de tarjetas
+            # Bucle para mostrar cada tarjeta
             for vuelo in vuelos_reales:
                 w_orig = get_weather_at(df_weather, origen, fecha, vuelo["hora_int"])
                 w_dest = get_weather_at(df_weather, destino, fecha, (vuelo["hora_int"] + 1) % 24)
 
                 if w_orig and w_dest:
-                    result = score_flight(w_orig, w_dest)
+                    # 1. Normalizamos datos
+                    datos_o = {
+                        "temperature": w_orig.get('temperature', 20),
+                        "wind_speed": w_orig.get('windspeed', w_orig.get('wind_speed', 0)),
+                        "precipitation": w_orig.get('precipitation', 0)
+                    }
+                    datos_d = {
+                        "temperature": w_dest.get('temperature', 20),
+                        "wind_speed": w_dest.get('windspeed', w_dest.get('wind_speed', 0)),
+                        "precipitation": w_dest.get('precipitation', 0)
+                    }
+
+                    # 2. Calculamos la nota usando tu archivo flight_scoring.py
+                    result = score_flight(datos_o, datos_d)
                     
-                    # Preparar datos seguros
-                    temp_orig = w_orig.get('temperature', 0)
-                    temp_dest = w_dest.get('temperature', 0)
-                    viento = w_orig.get('windspeed', w_orig.get('wind_speed', 0))
+                    nota_final = result.get('rating', 0.0)
+                    etiqueta = result.get('label', 'Malo')
+                    color_nota = result.get('color', '#dc3545')
 
-                    try:
-                        nota = float(result.get('rating', 0))
-                    except:
-                        nota = 0.0
-
-                    # --- Lógica de color que faltaba ---
-                    if nota >= 8:
-                        color_nota = "#28a745"
-                        etiqueta = "Excelente"
-                    elif nota >= 5:
-                        color_nota = "#ffc107"
-                        etiqueta = "Bueno"
-                    else:
-                        color_nota = "#dc3545"
-                        etiqueta = "Malo"
-                        
-                    # 3. DIBUJAR LA TARJETA
+                    # 3. Dibujamos la tarjeta (Asegúrate de que este st.markdown esté AQUÍ dentro)
                     st.markdown(f"""
-<div class="flight-card">
-    <div class="flight-info-main">
-        <div class="flight-time">{vuelo['hora_salida']}</div>
-        <div style="font-size: 0.9rem; color: #718096; font-weight: 600;">{vuelo['linea']}</div>
-        <div style="font-size: 0.8rem; color: #a0aec0;">{vuelo['vuelo']}</div>
-    </div>
-    <div class="flight-route">
-        <div style="display: flex; align-items: center; justify-content: center;">
-            <span style="font-size: 1.3rem; font-weight: 700;">{CIUDADES_IATA[origen]}</span>
-            <div class="route-line"><span class="plane-icon">✈️</span></div>
-            <span style="font-size: 1.3rem; font-weight: 700;">{CIUDADES_IATA[destino]}</span>
-        </div>
-        <div style="font-size: 0.8rem; color: #718096; margin-top: 8px;">Directo • Programado</div>
-    </div>
-    <div style="display: flex; align-items: center; gap: 20px;">
-        <div style="text-align: right; color: #4a5568; font-size: 0.9rem;">
-            <div style="font-weight: 600;">🌡️ {temp_orig}°C / {temp_dest}°C</div>
-            <div style="font-size: 0.8rem;">💨 {viento} km/h</div>
-        </div>
-        <div class="rating-box" style="background-color: {color_nota};">
-            {nota:.1f}
-            <div style="font-size: 0.6rem; font-weight: 400; text-transform: uppercase; margin-top: 2px;">{etiqueta}</div>
-        </div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
+                    <div class="flight-card">
+                        <div class="flight-info-main">
+                            <div class="flight-time">{vuelo['hora_salida']}</div>
+                            <div style="font-size: 0.9rem; color: #718096; font-weight: 600;">{vuelo['linea']}</div>
+                            <div style="font-size: 0.8rem; color: #a0aec0;">{vuelo['vuelo']}</div>
+                        </div>
+                        <div class="flight-route">
+                            <div style="display: flex; align-items: center; justify-content: center;">
+                                <span style="font-size: 1.3rem; font-weight: 700;">{CIUDADES_IATA[origen]}</span>
+                                <div class="route-line"><span class="plane-icon">✈️</span></div>
+                                <span style="font-size: 1.3rem; font-weight: 700;">{CIUDADES_IATA[destino]}</span>
+                            </div>
+                            <div style="font-size: 0.8rem; color: #718096; margin-top: 8px;">Directo • Programado</div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 20px;">
+                            <div style="text-align: right; color: #4a5568; font-size: 0.9rem;">
+                                <div style="font-weight: 600;">🌡️ {datos_o['temperature']}°C / {datos_d['temperature']}°C</div>
+                                <div style="font-size: 0.8rem;">💨 {datos_o['wind_speed']} km/h</div>
+                            </div>
+                            <div class="rating-box" style="background-color: {color_nota};">
+                                {nota_final:.1f}
+                                <div style="font-size: 0.6rem; font-weight: 400; text-transform: uppercase; margin-top: 2px;">{etiqueta}</div>
+                            </div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
 # CÓMO FUNCIONA
 st.markdown('<div id="como-funciona"></div>', unsafe_allow_html=True)
 st.markdown("---")
