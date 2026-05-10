@@ -30,7 +30,7 @@ st.set_page_config(page_title="Legion Flight", layout="wide")
 
 def get_avion_base64():
     # Usamos tu archivo real
-    img_path = os.path.join(os.path.dirname(__file__), "avion.jpeg")
+    img_path = os.path.join(os.path.dirname(__file__), "assets", "avion.jpeg")
     with open(img_path, "rb") as f:
         return base64.b64encode(f.read()).decode()
 
@@ -393,6 +393,7 @@ st.markdown("")
 
 # Lista de aeropuertos disponibles
 AEROPUERTOS = [
+    # España
     "Madrid Barajas",
     "Barcelona El Prat",
     "Palma de Mallorca",
@@ -408,6 +409,30 @@ AEROPUERTOS = [
     "Fuerteventura",
     "Menorca",
     "Santiago de Compostela",
+    # Inglaterra
+    "London Heathrow",
+    "London Gatwick",
+    "Manchester",
+    # Portugal
+    "Lisboa",
+    "Oporto",
+    "Faro",
+    # Marruecos
+    "Casablanca Mohammed V",
+    "Marrakech Menara",
+    "Tánger Ibn Battouta",
+    # Italia
+    "Roma Fiumicino",
+    "Milán Malpensa",
+    "Nápoles",
+    # Francia
+    "París Charles de Gaulle",
+    "París Orly",
+    "Marsella",
+    # Alemania
+    "Frankfurt",
+    "Múnich",
+    "Berlín Brandenburg",
 ]
 
 # BUSCADOR
@@ -417,20 +442,19 @@ st.markdown('<div id="buscar-vuelo"></div>', unsafe_allow_html=True)
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    # Usamos las llaves de CIUDADES_IATA (los nombres bonitos)
-    # La variable 'origen' guardará el nombre: ej. "Madrid Barajas"
     origen = st.selectbox(
         "Ciudad / Aeropuerto salida",
         options=list(CIUDADES_IATA.keys()),
-        index=0  # Selecciona Madrid por defecto
+        index=0,
+        placeholder="Escribe para buscar...",
     )
 
 with col2:
-    # La variable 'destino' guardará el nombre: ej. "Barcelona El Prat"
     destino = st.selectbox(
         "Ciudad / Aeropuerto llegada",
         options=list(CIUDADES_IATA.keys()),
-        index=1  # Selecciona Barcelona por defecto
+        index=1,
+        placeholder="Escribe para buscar...",
     )
 
 with col3:

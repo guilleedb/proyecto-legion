@@ -18,6 +18,30 @@ CIUDADES_IATA = {
     "Fuerteventura": "FUE",
     "Menorca": "MAH",
     "Santiago de Compostela": "SCQ",
+    # Inglaterra
+    "London Heathrow": "LHR",
+    "London Gatwick": "LGW",
+    "Manchester": "MAN",
+    # Portugal
+    "Lisboa": "LIS",
+    "Oporto": "OPO",
+    "Faro": "FAO",
+    # Marruecos
+    "Casablanca Mohammed V": "CMN",
+    "Marrakech Menara": "RAK",
+    "Tánger Ibn Battouta": "TNG",
+    # Italia
+    "Roma Fiumicino": "FCO",
+    "Milán Malpensa": "MXP",
+    "Nápoles": "NAP",
+    # Francia
+    "París Charles de Gaulle": "CDG",
+    "París Orly": "ORY",
+    "Marsella": "MRS",
+    # Alemania
+    "Frankfurt": "FRA",
+    "Múnich": "MUC",
+    "Berlín Brandenburg": "BER",
 }
 
 @st.cache_data(ttl=300)
@@ -43,7 +67,11 @@ def buscar_programacion_comercial(origen_nombre, destino_nombre):
         horas_vistas = set() 
         
         # FILTRO DE AEROLÍNEAS: Solo las que operan rutas nacionales/europeas reales
-        AEROLINEAS_REALES = ["Iberia", "Vueling", "Air Europa", "Ryanair", "Binter", "Canaryfly", "Volotea"]
+        AEROLINEAS_REALES = [
+            "Iberia", "Vueling", "Air Europa", "Ryanair", "Binter", "Canaryfly", "Volotea",
+            "British Airways", "easyJet", "TAP", "Royal Air Maroc", "Alitalia", "ITA Airways",
+            "Air France", "Transavia", "Lufthansa", "Eurowings", "Wizz Air",
+        ]
 
         if "data" in data:
             for f in data["data"]:
