@@ -4,7 +4,25 @@ import sys
 import os
 import datetime
 import base64
+import random
 
+def obtener_precio_estimado(origen, destino):
+    # Definimos precios base por ciudad para simular realismo
+    precios_base = {
+        "Madrid": 50, "Barcelona": 45, "Londres": 80, 
+        "Paris": 75, "Nueva York": 450, "Roma": 60
+    }
+    
+    # Extraemos el nombre de la ciudad del string del selector (ej: "Madrid Barajas" -> "Madrid")
+    ciudad_ori = origen.split()[0]
+    ciudad_des = destino.split()[0]
+    
+    # Lógica: Precio base del destino + un extra por origen + un toque aleatorio
+    base = precios_base.get(ciudad_des, 100) 
+    extra_origen = precios_base.get(ciudad_ori, 50) * 0.2
+    
+    precio_final = int(base + extra_origen + random.randint(5, 25))
+    return precio_final
 # --- CONFIGURACIÓN DE RUTAS ---
 # Obtenemos la ruta absoluta de la carpeta donde está este archivo (app.py)
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -324,6 +342,60 @@ st.markdown("""
         text-align: center;
         min-width: 90px;
     }
+/* Tarjeta de vuelo mejorada */
+.flight-card {
+    background: white;
+    border-radius: 15px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    border: 1px solid #eef2f6;
+    transition: 0.3s;
+    overflow: hidden;
+}
+
+.flight-card:hover {
+    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+    border-color: #2563eb;
+}
+
+/* Sección de información (Izquierda) */
+.flight-main-content {
+    padding: 25px;
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Sección de precio (Derecha) */
+.flight-price-section {
+    background: #f8f9fc;
+    padding: 25px;
+    min-width: 160px;
+    text-align: center;
+    border-left: 1px solid #eef2f6;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.price-value {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #1a2b49;
+    letter-spacing: -1px;
+}
+
+.price-currency { font-size: 1rem; color: #1a2b49; margin-left: 2px; }
+
+.price-tag {
+    font-size: 0.7rem;
+    color: #2ecc71;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-top: 5px;
+}            
 </style>
 
 <div class="navbar">
@@ -461,6 +533,10 @@ if buscar:
         if not vuelos_reales:
             st.warning("No se encontraron vuelos comerciales programados.")
         else:
+            # 1. Calculamos el precio base una vez para toda la búsqueda
+            # (Asegúrate de haber pegado la función obtener_precio_estimado arriba del todo)
+            precio_ruta = obtener_precio_estimado(origen, destino)
+
             # Ordenar vuelos por hora
             for v in vuelos_reales:
                 partes = v['hora_salida'].split(':')
@@ -469,14 +545,13 @@ if buscar:
             
             vuelos_reales = sorted(vuelos_reales, key=lambda x: (x['h_sort'], x['m_sort']))
 
-            # Bucle de tarjetas
             # Bucle para mostrar cada tarjeta
             for vuelo in vuelos_reales:
                 w_orig = get_weather_at(df_weather, origen, fecha, vuelo["hora_int"])
                 w_dest = get_weather_at(df_weather, destino, fecha, (vuelo["hora_int"] + 1) % 24)
 
                 if w_orig and w_dest:
-                    # 1. Normalizamos datos
+                    # Normalizamos datos de clima
                     datos_o = {
                         "temperature": w_orig.get('temperature', 20),
                         "wind_speed": w_orig.get('windspeed', w_orig.get('wind_speed', 0)),
@@ -488,37 +563,52 @@ if buscar:
                         "precipitation": w_dest.get('precipitation', 0)
                     }
 
-                    # 2. Calculamos la nota usando tu archivo flight_scoring.py
+                    # Calculamos la nota
                     result = score_flight(datos_o, datos_d)
-                    
                     nota_final = result.get('rating', 0.0)
                     etiqueta = result.get('label', 'Malo')
                     color_nota = result.get('color', '#dc3545')
 
-                    # 3. Dibujamos la tarjeta (Asegúrate de que este st.markdown esté AQUÍ dentro)
+                    # --- LÓGICA DE PRECIO INDIVIDUAL ---
+                    # Variamos el precio +- 10€ según la aerolínea para que parezca real
+                    precio_vuelo = precio_ruta + random.randint(-10, 15)
+
+                    # 3. Dibujamos la tarjeta con la sección de precio a la derecha
                     st.markdown(f"""
                     <div class="flight-card">
-                        <div class="flight-info-main">
-                            <div class="flight-time">{vuelo['hora_salida']}</div>
-                            <div style="font-size: 0.9rem; color: #718096; font-weight: 600;">{vuelo['linea']}</div>
-                            <div style="font-size: 0.8rem; color: #a0aec0;">{vuelo['vuelo']}</div>
-                        </div>
-                        <div class="flight-route">
-                            <div style="display: flex; align-items: center; justify-content: center;">
-                                <span style="font-size: 1.3rem; font-weight: 700;">{CIUDADES_IATA[origen]}</span>
-                                <div class="route-line"><span class="plane-icon">✈️</span></div>
-                                <span style="font-size: 1.3rem; font-weight: 700;">{CIUDADES_IATA[destino]}</span>
+                        <div class="flight-main-content">
+                            <div class="flight-info-main">
+                                <div class="flight-time">{vuelo['hora_salida']}</div>
+                                <div style="font-size: 0.9rem; color: #718096; font-weight: 600;">{vuelo['linea']}</div>
+                                <div style="font-size: 0.8rem; color: #a0aec0;">{vuelo['vuelo']}</div>
                             </div>
-                            <div style="font-size: 0.8rem; color: #718096; margin-top: 8px;">Directo • Programado</div>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 20px;">
-                            <div style="text-align: right; color: #4a5568; font-size: 0.9rem;">
-                                <div style="font-weight: 600;">🌡️ {datos_o['temperature']}°C / {datos_d['temperature']}°C</div>
-                                <div style="font-size: 0.8rem;">💨 {datos_o['wind_speed']} km/h</div>
+                            
+                            <div class="flight-route" style="flex-grow: 1; text-align: center;">
+                                <div style="display: flex; align-items: center; justify-content: center; gap: 15px;">
+                                    <span style="font-size: 1.2rem; font-weight: 700;">{CIUDADES_IATA[origen]}</span>
+                                    <div style="height: 2px; background: #eef2f6; width: 60px; position: relative;">
+                                        <span style="position: absolute; top: -10px; left: 20px;">✈️</span>
+                                    </div>
+                                    <span style="font-size: 1.2rem; font-weight: 700;">{CIUDADES_IATA[destino]}</span>
+                                </div>
+                                <div style="font-size: 0.75rem; color: #a0aec0; margin-top: 5px;">
+                                    🌡️ {datos_o['temperature']}°C → {datos_d['temperature']}°C
+                                </div>
                             </div>
-                            <div class="rating-box" style="background-color: {color_nota};">
-                                {nota_final:.1f}
-                                <div style="font-size: 0.6rem; font-weight: 400; text-transform: uppercase; margin-top: 2px;">{etiqueta}</div>
+
+                            <div style="margin: 0 25px;">
+                                <div class="rating-box" style="background-color: {color_nota}; margin: 0;">
+                                    {nota_final:.1f}
+                                    <div style="font-size: 0.5rem; font-weight: 400; text-transform: uppercase;">{etiqueta}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flight-price-section">
+                            <div class="price-value">{precio_vuelo}<span style="font-size: 1rem;">€</span></div>
+                            <div class="price-tag">Estimado</div>
+                            <div style="margin-top: 10px;">
+                                <button style="background: #2563eb; color: white; border: none; padding: 5px 12px; border-radius: 6px; font-size: 0.7rem; cursor: pointer;">Seleccionar</button>
                             </div>
                         </div>
                     </div>
