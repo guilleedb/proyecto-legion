@@ -50,14 +50,6 @@ Para arrancar todo junto:
 
 ```bash
 docker compose up --build
-# La app queda disponible en http://localhost:8505
+
 ```
-
-## Conceptos Docker
-
-- Imagen: plantilla con el sistema operativo, Python y las librerias instaladas. Se construye a partir del Dockerfile.
-- Contenedor: una instancia en ejecucion de una imagen. Es como un mini-ordenador aislado.
-- Dockerfile: archivo con las instrucciones para construir una imagen (que instalar, que copiar, como arrancar).
-- Docker Compose: herramienta para definir y arrancar varios contenedores a la vez, en orden, con un solo comando.
-- Volumen: carpeta persistente fuera de los contenedores. Si un contenedor se apaga, los datos no se pierden.
 
