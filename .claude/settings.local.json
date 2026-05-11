@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python src/download.py)",
+      "Bash(python src/clean.py)"
+    ]
+  }
+}
