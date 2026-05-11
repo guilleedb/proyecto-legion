@@ -1,10 +1,7 @@
-# docker-compose.yml - proyecto-legion
 # Coordina los 2 contenedores en orden
-
 services:
 
   # Contenedor 1: descarga y limpia los datos
-  # Se construye con el Dockerfile de la raiz
   data-pipeline:
     build:
       context: .
@@ -13,7 +10,6 @@ services:
       - data-volume:/app/data  # guarda los CSV/JSON en el volumen compartido
 
   # Contenedor 2: la app de Streamlit
-  # Se construye con el Dockerfile.app
   streamlit-app:
     build:
       context: .
