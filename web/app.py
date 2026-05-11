@@ -4,7 +4,13 @@ import sys
 import os
 import datetime
 import base64
+<<<<<<< Updated upstream
 import random
+=======
+
+# --- 1. CONFIGURACIÓN Y CARGA DE DATOS (Tu lógica original) ---
+st.set_page_config(page_title="Legion Flight", layout="wide")
+>>>>>>> Stashed changes
 
 def obtener_precio_estimado(origen, destino):
     precios_base = {
@@ -93,8 +99,12 @@ except ModuleNotFoundError as e:
     st.info(f"Python está buscando en: {src_path}")
     st.stop()
 
-st.set_page_config(page_title="Legion Flight", layout="wide")
+# Función para la imagen de fondo en Base64
+def get_base64(bin_file):
+    with open(bin_file, 'rb') as f:
+        return base64.b64encode(f.read()).decode()
 
+<<<<<<< Updated upstream
 
 def get_avion_base64():
     img_path = os.path.join(os.path.dirname(__file__), "assets", "avion.jpeg")
@@ -103,6 +113,101 @@ def get_avion_base64():
 
 imagen_fondo_64 = get_avion_base64()
 
+=======
+try:
+    ruta_img = os.path.join(os.path.dirname(__file__), "avion.png")
+    img_b64 = get_base64(ruta_img)
+    fondo_url = f"data:image/png;base64,{img_b64}"
+except:
+    fondo_url = ""
+
+# --- 2. EL NUEVO DISEÑO VISUAL (CSS) ---
+st.markdown(f"""
+<style>
+    .main .block-container {{ padding: 0rem !important; }}
+    header {{ visibility: hidden; }}
+    #MainMenu {{ visibility: hidden; }}
+    footer {{ visibility: hidden; }}
+
+    /* Navbar Flotante */
+    .navbar {{
+        position: absolute; top: 0; left: 0; width: 100%; z-index: 999;
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 1.5rem 4rem; background: transparent;
+    }}
+    .navbar-logo {{ font-size: 1.5rem; font-weight: 700; color: white; display: flex; align-items: center; gap: 10px; }}
+    .navbar-links {{ display: flex; gap: 2.5rem; }}
+    .navbar-links a {{ color: #ffffff; text-decoration: none; font-size: 0.95rem; font-weight: 500; }}
+
+    /* Hero Section */
+    .hero-section {{
+        background-image: linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.4)), url("{fondo_url}");
+        background-size: cover; background-position: center;
+        height: 85vh; display: flex; flex-direction: column;
+        justify-content: center; align-items: center;
+        color: white; text-align: center; position: relative;
+    }}
+    .hero-title {{ font-size: 3.5rem !important; font-weight: 800 !important; max-width: 850px; line-height: 1.1; margin-bottom: 15px !important; }}
+    .hero-subtitle {{ font-size: 1.2rem; max-width: 650px; opacity: 0.9; margin-bottom: 35px; }}
+
+    /* Widgets como en la foto 1 */
+    .weather-widget {{
+        position: absolute; background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.2);
+        padding: 15px 20px; border-radius: 15px; text-align: left; color: white;
+    }}
+
+    /* Contenedor del buscador blanco */
+    .search-outer-container {{
+        background: white; padding: 40px 8%; margin-top: -60px;
+        position: relative; z-index: 10; border-radius: 30px 30px 0 0;
+        box-shadow: 0 -15px 35px rgba(0,0,0,0.05); color: #1e1e2e;
+    }}
+
+    .rating-badge {{
+        display: inline-block; padding: 0.4rem 1rem;
+        border-radius: 20px; font-weight: 600; color: white; font-size: 0.85rem;
+    }}
+</style>
+
+<div class="navbar">
+    <div class="navbar-logo">✈️ Legion Flight</div>
+    <div class="navbar-links">
+        <a href="#buscar-vuelo">🔍 Buscar vuelo</a>
+        <a href="#como-funciona">⚙️ Cómo funciona</a>
+        <a href="#contacto">📩 Contacto</a>
+    </div>
+</div>
+
+<div class="hero-section">
+    <div class="weather-widget" style="top: 15%; left: 8%;">
+        <small style="opacity:0.8; font-size:0.7rem;">VIENTO</small><br>
+        <span style="font-size:1.3rem; font-weight:700;">18 kt</span><br>
+        <small style="opacity:0.8; font-size:0.6rem;">RACHAS 26 kt</small>
+    </div>
+    <div class="weather-widget" style="top: 15%; left: 22%;">
+        <small style="opacity:0.8; font-size:0.7rem;">TEMPERATURA</small><br>
+        <span style="font-size:1.3rem; font-weight:700;">-12 °C</span>
+    </div>
+    <div class="weather-widget" style="top: 15%; right: 8%;">
+        <small style="opacity:0.8; font-size:0.7rem;">CIELO</small><br>
+        <span style="font-size:1.3rem; font-weight:700;">Nubes dispersas</span><br>
+        <small style="opacity:0.8; font-size:0.6rem;">8,500 ft</small>
+    </div>
+
+    <h1 class="hero-title">Descubre cómo será tu vuelo antes de despegar</h1>
+    <p class="hero-subtitle">Convierte la incertidumbre en información: conoce las condiciones de tu vuelo y destino antes de embarcar.</p>
+    
+    <div style="display: flex; gap: 15px;">
+        <div style="background: #3B82F6; padding: 12px 30px; border-radius: 8px; font-weight: 600;">Buscar vuelo</div>
+        <div style="border: 1px solid white; padding: 12px 30px; border-radius: 8px;">Cómo funciona</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+# --- 3. LÓGICA DE BACKEND (Tu código de 300 líneas recuperado) ---
+
+>>>>>>> Stashed changes
 @st.cache_data
 def load_data():
     return load_weather_csv()
@@ -110,6 +215,7 @@ def load_data():
 df_weather = load_data()
 available_dates = get_available_dates(df_weather)
 
+<<<<<<< Updated upstream
 # ─────────────────────────────────────────────
 #  CSS GLOBAL  (sin f-string, sin variables Python)
 # ─────────────────────────────────────────────
@@ -350,10 +456,47 @@ with col4:
 # ─────────────────────────────────────────────
 #  RESULTADOS
 # ─────────────────────────────────────────────
+=======
+# Lista de aeropuertos original
+aeropuertos = [
+    "Madrid - Barajas (MAD)", "Barcelona - El Prat (BCN)", "Málaga - Costa del Sol (AGP)",
+    "Palma de Mallorca (PMI)", "Alicante (ALC)", "Valencia (VLC)", "Sevilla (SVQ)",
+    "Bilbao (BIO)", "Gran Canaria (LPA)", "Tenerife Norte (TFN)", "Tenerife Sur (TFS)",
+    "Ibiza (IBZ)", "Menorca (MAH)", "Santiago (SCQ)", "Asturias (OVD)", "Zaragoza (ZAZ)"
+]
+
+VUELOS = [
+    {"salida": 8, "llegada": 10, "salida_str": "08:00", "llegada_str": "10:00", "duracion": "2h", "franja": "Mañana"},
+    {"salida": 12, "llegada": 14, "salida_str": "12:30", "llegada_str": "14:30", "duracion": "2h", "franja": "Mediodía"},
+    {"salida": 18, "llegada": 20, "salida_str": "18:45", "llegada_str": "20:45", "duracion": "2h", "franja": "Tarde"},
+]
+
+# --- 4. SECCIÓN DE BÚSQUEDA ---
+st.markdown('<div class="search-outer-container" id="buscar-vuelo">', unsafe_allow_html=True)
+
+col1, col2, col3, col4 = st.columns([2, 2, 1.5, 1])
+with col1:
+    origen = st.selectbox("Ciudad / Aeropuerto salida", aeropuertos, index=0)
+with col2:
+    destino = st.selectbox("Ciudad / Aeropuerto llegada", aeropuertos, index=1)
+with col3:
+    fecha = st.date_input("Fecha salida", 
+                         value=available_dates[0], 
+                         min_value=available_dates[0], 
+                         max_value=available_dates[-1])
+with col4:
+    st.write("##")
+    buscar = st.button("🔍 Buscar vuelos", use_container_width=True)
+
+st.markdown('</div>', unsafe_allow_html=True)
+
+# --- 5. RESULTADOS (Tu lógica intacta) ---
+>>>>>>> Stashed changes
 if buscar:
     if origen == destino:
         st.error("El aeropuerto de origen y destino no pueden ser el mismo.")
     else:
+<<<<<<< Updated upstream
         vuelos_reales = buscar_programacion_comercial(origen, destino)
 
         if not vuelos_reales:
@@ -405,8 +548,52 @@ if buscar:
 # ─────────────────────────────────────────────
 st.markdown('<div id="como-funciona"></div>', unsafe_allow_html=True)
 st.markdown("---")
-st.markdown("## ⚙️ Cómo funciona")
+=======
+        st.write("### ✈️ Condiciones de vuelo")
+        weather_origin = get_weather_at(df_weather, origen, fecha, 12)
+        weather_dest = get_weather_at(df_weather, destino, fecha, 12)
 
+        if weather_origin is None or weather_dest is None:
+            st.warning("No hay datos disponibles para esta selección.")
+        else:
+            # Métricas detalladas que tenías antes
+            col_o, col_d = st.columns(2)
+            for col, weather, label in [(col_o, weather_origin, f"🛫 {origen}"), (col_d, weather_dest, f"🛬 {destino}")]:
+                with col:
+                    st.markdown(f"**{label}**")
+                    m1, m2, m3 = st.columns(3)
+                    m1.metric("🌡️ Temp", f"{weather['temperature']}°C")
+                    m2.metric("💨 Viento", f"{weather['wind_speed']} km/h")
+                    m3.metric("🌧️ Prec.", f"{weather['precipitation']} mm")
+
+            st.write("---")
+            st.subheader("🕐 Vuelos disponibles")
+            for vuelo in VUELOS:
+                w_orig = get_weather_at(df_weather, origen, fecha, vuelo["salida"])
+                w_dest = get_weather_at(df_weather, destino, fecha, vuelo["llegada"])
+                
+                if w_orig and w_dest:
+                    result = score_flight(w_orig, w_dest)
+                    c_h, c_info, c_score = st.columns([1, 2, 1])
+                    with c_h:
+                        st.write(f"**{vuelo['franja']}**\n{vuelo['salida_str']} - {vuelo['llegada_str']}")
+                    with c_info:
+                        st.write(f"Origen: {w_orig['temperature']}°C | Destino: {w_dest['temperature']}°C")
+                    with c_score:
+                        st.markdown(f'<span class="rating-badge" style="background:{result["color"]}">{result["rating"]} ({result["flight_score"]})</span>', unsafe_allow_html=True)
+                    st.write("---")
+
+# --- 6. SECCIONES INFERIORES ---
+st.container()
+st.markdown('<div style="padding: 60px 8%;">', unsafe_allow_html=True)
+>>>>>>> Stashed changes
+st.markdown("## ⚙️ Cómo funciona")
+ca, cb, cc = st.columns(3)
+ca.info("**1. Busca**\nSelecciona tus aeropuertos.")
+cb.info("**2. Analiza**\nRevisamos el clima real.")
+cc.info("**3. Decide**\nVuela con tranquilidad.")
+
+<<<<<<< Updated upstream
 col_a, col_b, col_c = st.columns(3)
 with col_a:
     st.markdown("### 1. Busca")
@@ -428,3 +615,14 @@ st.markdown("## ❓ FAQ")
 st.write("¿De dónde salen los datos? → Del servicio meteorológico Open-Meteo")
 st.write("¿Qué variables se analizan? → Temperatura, viento y precipitación")
 st.write("¿Puedo ver previsión a más de 7 días? → De momento cubrimos los próximos 7 días")
+=======
+st.markdown("---")
+st.markdown("## ❓ FAQ")
+st.write("""
+- **¿De dónde salen los datos?** Open-Meteo
+- **¿Qué variables se analizan?** Temperatura, viento y precipitación
+""")
+st.markdown("---")
+st.write("📩 Contacto: **contacto@legionflight.com**")
+st.markdown('</div>', unsafe_allow_html=True)
+>>>>>>> Stashed changes
