@@ -1,7 +1,7 @@
-# Dockerfile - proyecto-legion
-# Contenedor 1: descarga y limpia los datos
+# Dockerfile.app - proyecto-legion
+# Contenedor 2: sirve la app de Streamlit
 
-# Usamos la imagen oficial de Python 3.12 (slim es la version mas ligera)
+# Usamos la misma imagen base que el contenedor 1
 FROM python:3.12-slim
 
 # Esto evita que Python cree archivos .pyc y que los logs salgan en tiempo real
@@ -11,7 +11,7 @@ ENV PYTHONUNBUFFERED=1
 # Aqui le decimos al contenedor que trabaje dentro de la carpeta /app
 WORKDIR /app
 
-# Instalamos dependencias del sistema que algunas librerias de Python necesitan
+# Instalamos dependencias del sistema
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
@@ -20,9 +20,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copiamos solo el codigo del pipeline, no los datos
-# Los datos se generan en ejecucion y se guardan en el volumen compartido
+# Copiamos el codigo de la app y los modulos de src
+# Los datos NO se copian aqui, llegan a traves del volumen compartido
 COPY src/ ./src/
+COPY web/ ./web/
 
-# Descarga y limpia los datos, los deja en /app/data para el otro contenedor
-CMD ["python", "src/download.py"]
+# El puerto donde corre Streamlit
+EXPOSE 8505
+
+# Comando para arrancar la app
+CMD ["streamlit", "run", "web/app.py", \
+     "--server.port=8505", \
+     "--server.address=0.0.0.0"]
