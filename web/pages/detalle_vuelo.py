@@ -2,7 +2,6 @@ import streamlit as st
 import os
 import sys
 
-# ─── PATH SETUP ────────────────────────────────────────────────────────────────
 current_dir  = os.path.dirname(os.path.abspath(__file__))
 web_dir      = os.path.abspath(os.path.join(current_dir, ".."))
 project_root = os.path.abspath(os.path.join(web_dir, ".."))
@@ -12,12 +11,14 @@ if src_path not in sys.path:
     sys.path.insert(0, src_path)
 
 from flight_scoring import score_wind, score_precipitation, score_temperature
-from ayuda_weather import degrees_to_compass
+from ayuda_weather import degrees_to_compass, load_weather_csv, get_weather_at
+import matplotlib.pyplot as plt
+import matplotlib
+import datetime
 
 st.set_page_config(page_title="Detalle de vuelo · Legion Flight", layout="wide")
 
-# ─── CSS + NAVBAR ──────────────────────────────────────────────────────────────
-# st.markdown (string estático, sin f-string) → el procesador Markdown no interfiere
+# CSS mínimo: ocultar chrome de Streamlit y barra de navegación fija
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inter:wght@400;500;600;700&display=swap');
@@ -37,25 +38,21 @@ st.markdown("""
         background-color: #0e1117; border-bottom: 1px solid #2e2e2e;
         display: flex; align-items: center; padding: 0.6rem 2rem; box-sizing: border-box;
     }
-    .navbar-logo { font-family: 'Syne', sans-serif; font-size: 1.3rem; font-weight: 700; color: #fff; }
+    .navbar-logo { font-family: 'Syne', sans-serif; font-size: 1.3rem; font-weight: 800; color: #fff; }
 
     div.stButton > button {
         background-color: #2563eb !important; color: white !important;
         font-weight: 700 !important; border-radius: 8px !important;
-        border: none !important; transition: all 0.2s ease;
-        padding: 0.5rem 1.2rem !important;
+        border: none !important; padding: 0.5rem 1.2rem !important;
     }
-    div.stButton > button:hover {
-        background-color: #1d4ed8 !important;
-        box-shadow: 0 4px 12px rgba(37,99,235,0.3);
-    }
+    div.stButton > button:hover { background-color: #1d4ed8 !important; }
 </style>
 <div class="navbar">
-    <div class="navbar-logo">✈️ Legion Flight</div>
+    <div class="navbar-logo">Legion<span style="color:#3b82f6;">.</span>Flight</div>
 </div>
 """, unsafe_allow_html=True)
 
-# ─── SESSION STATE ──────────────────────────────────────────────────────────────
+# --- SESSION STATE ---
 v = st.session_state.get("vuelo_seleccionado")
 
 if not v:
@@ -64,7 +61,7 @@ if not v:
         st.switch_page("app.py")
     st.stop()
 
-# ─── CÁLCULO DE SCORES ─────────────────────────────────────────────────────────
+# --- CÁLCULO DE SCORES ---
 sv_o = score_wind(v["viento_orig"])
 sp_o = score_precipitation(v["precip_orig"])
 st_o = score_temperature(v["temp_orig"])
@@ -81,12 +78,7 @@ sv_avg = (sv_o + sv_d) / 2
 sp_avg = (sp_o + sp_d) / 2
 st_avg = (st_o + st_d) / 2
 
-# ─── HELPERS ───────────────────────────────────────────────────────────────────
-def bar_color(s):
-    if s >= 80: return "#28a745"
-    if s >= 55: return "#ffc107"
-    return "#dc3545"
-
+# --- HELPERS ---
 def precip_label(mm):
     if mm == 0:    return "Sin lluvia"
     if mm <= 1:    return "Ligera"
@@ -105,218 +97,175 @@ def estado_color(estado):
     entry = tabla.get(str(estado).lower())
     return entry[0] if entry else "background:#374151;color:#f3f4f6;"
 
-def recomendacion(nota):
-    if nota >= 9.0:
-        return "#14532d", "rgba(20,83,45,0.25)", "Condiciones excepcionales", \
-               "Mínimas turbulencias esperadas, buena visibilidad y temperaturas confortables en ambos aeropuertos. Es un momento ideal para volar."
-    if nota >= 7.5:
-        return "#1e3a5f", "rgba(30,58,95,0.25)", "Buenas condiciones", \
-               "El trayecto debería transcurrir con normalidad. Las condiciones meteorológicas son favorables en origen y destino."
-    if nota >= 5.5:
-        return "#78350f", "rgba(120,53,15,0.25)", "Condiciones moderadas", \
-               "Es posible que haya algo de turbulencia o lluvia ligera. Llega con tiempo y consulta el estado del vuelo antes de salir."
-    return "#7f1d1d", "rgba(127,29,29,0.25)", "Condiciones adversas", \
-           "Se detectan condiciones desfavorables en alguno de los aeropuertos. Consulta el estado actualizado y contacta con la aerolínea si tienes dudas."
+# --- VARIABLES DERIVADAS ---
+precio_str = f"~{v['precio']} €" if isinstance(v.get("precio"), int) else "—"
+compass_o  = degrees_to_compass(v["dir_orig"])
+compass_d  = degrees_to_compass(v["dir_dest"])
+pl_o       = precip_label(v["precip_orig"])
+pl_d       = precip_label(v["precip_dest"])
+estado_css = estado_color(v["estado"])
 
-# ─── VARIABLES DERIVADAS ────────────────────────────────────────────────────────
-precio_str   = f"~{v['precio']} euro" if isinstance(v.get("precio"), int) else "-"
-compass_o    = degrees_to_compass(v["dir_orig"])
-compass_d    = degrees_to_compass(v["dir_dest"])
-pl_o         = precip_label(v["precip_orig"])
-pl_d         = precip_label(v["precip_dest"])
-estado_css   = estado_color(v["estado"])
-rc_b, rc_bg, rc_title, rc_text = recomendacion(v["nota"])
-
-# ─── BOTÓN VOLVER ──────────────────────────────────────────────────────────────
-if st.button("Volver a resultados", key="volver_top"):
+# --- BOTÓN VOLVER ---
+if st.button("← Volver a resultados", key="volver_top"):
     st.switch_page("app.py")
 
-# ─── SECCIÓN 1: CABECERA ───────────────────────────────────────────────────────
-# Usamos st.html() para evitar que el procesador Markdown interfiera con el HTML dinámico
-st.html(f"""
-<div style="
-    background: linear-gradient(135deg, #0d1117 0%, #111827 100%);
-    border: 1px solid rgba(255,255,255,0.07);
-    border-left: 4px solid #2563eb;
-    border-radius: 16px;
-    padding: 28px 32px;
-    color: #e8eaf0;
-    margin-bottom: 16px;
-    margin-top: 12px;
-">
-    <div style="display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:24px;">
+# --- SECCIÓN 1: CABECERA ---
+with st.container(border=True):
+    c1, c2, c3, c4, c5 = st.columns([2, 1, 2, 1, 1])
+    with c1:
+        st.caption("Ruta")
+        st.markdown(f"### {v['iata_orig']} → {v['iata_dest']}")
+        st.caption(f"{v['origen']} → {v['destino']}")
+    with c2:
+        st.metric("Hora salida", v["hora_salida"])
+        st.caption(v["fecha"])
+    with c3:
+        st.metric("Aerolínea", v["linea"])
+        st.caption(v["vuelo"])
+    with c4:
+        st.caption("Estado")
+        st.markdown(
+            f'<span style="display:inline-block;padding:4px 14px;border-radius:20px;font-size:0.78rem;font-weight:600;{estado_css}">{v["estado"]}</span>',
+            unsafe_allow_html=True
+        )
+    with c5:
+        st.metric("Precio estimado", precio_str)
+        st.caption("estimación sin garantía")
 
-        <div>
-            <div style="font-size:0.75rem; color:#6b7280; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px;">Vuelo</div>
-            <div style="font-family:'Syne',sans-serif; font-size:1.8rem; font-weight:800; color:white; line-height:1.1;">
-                {v["iata_orig"]} &#8594; {v["iata_dest"]}
-            </div>
-            <div style="font-size:1rem; color:#9ca3af; margin-top:4px;">
-                {v["origen"]} &#8594; {v["destino"]}
-            </div>
-        </div>
-
-        <div style="text-align:center;">
-            <div style="font-size:0.75rem; color:#6b7280; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px;">Hora salida</div>
-            <div style="font-family:'Syne',sans-serif; font-size:2rem; font-weight:800; color:white;">{v["hora_salida"]}</div>
-            <div style="font-size:0.8rem; color:#6b7280;">{v["fecha"]}</div>
-        </div>
-
-        <div style="text-align:center;">
-            <div style="font-size:0.75rem; color:#6b7280; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px;">Aerolinea</div>
-            <div style="font-family:'Syne',sans-serif; font-size:1.2rem; font-weight:700; color:white; line-height:1.1;">{v["linea"]}</div>
-            <div style="font-size:0.85rem; color:#9ca3af; margin-top:4px;">{v["vuelo"]}</div>
-        </div>
-
-        <div style="text-align:center;">
-            <div style="font-size:0.75rem; color:#6b7280; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:8px;">Estado</div>
-            <span style="display:inline-block; padding:4px 14px; border-radius:20px; font-size:0.78rem; font-weight:600; {estado_css}">{v["estado"]}</span>
-        </div>
-
-        <div style="text-align:center;">
-            <div style="font-size:0.75rem; color:#6b7280; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px;">Precio estimado</div>
-            <div style="font-family:'Syne',sans-serif; font-size:1.2rem; font-weight:700; color:white; line-height:1.1;">{precio_str}</div>
-            <div style="font-size:0.7rem; color:#6b7280;">estimacion sin garantia</div>
-        </div>
-
-    </div>
-</div>
-""")
-
-# ─── SECCIÓN 2: RATING + CLIMA ─────────────────────────────────────────────────
+# --- SECCIÓN 2: RATING + CLIMA ---
 col_rating, col_orig, col_dest = st.columns([1, 1, 1])
 
-CARD = "background:linear-gradient(135deg,#0d1117 0%,#111827 100%);border:1px solid rgba(255,255,255,0.07);border-left:4px solid #2563eb;border-radius:16px;padding:24px 28px;color:#e8eaf0;height:100%;"
-BAR_BG = "background:rgba(255,255,255,0.07);border-radius:6px;height:8px;margin:6px 0 14px 0;overflow:hidden;"
-
-def bar(pct, color):
-    return f'<div style="{BAR_BG}"><div style="height:100%;border-radius:6px;width:{pct:.0f}%;background:{color};"></div></div>'
-
-def stat_row(label, value):
-    return f'''<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
-        <span style="color:#6b7280;font-size:0.85rem;">{label}</span>
-        <span style="color:#e8eaf0;font-weight:600;font-size:0.95rem;">{value}</span>
-    </div>'''
-
-def score_row(label, val):
-    return f'''<div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:4px;">
-        <span style="color:#9ca3af;">{label}</span>
-        <span style="color:#e8eaf0;">{val:.0f}/100</span>
-    </div>{bar(val, bar_color(val))}'''
-
 with col_rating:
-    st.html(f"""
-    <div style="{CARD}">
-        <div style="font-size:0.75rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:16px;">Rating meteorologico</div>
+    with st.container(border=True):
+        st.caption("Rating meteorológico")
+        st.metric(v["etiqueta"], f"{v['nota']:.1f} / 10", help="sobre 10 · peor de los dos aeropuertos")
 
-        <div style="text-align:center;margin-bottom:24px;">
-            <div style="font-family:'Syne',sans-serif;font-size:3.5rem;font-weight:800;color:{v["color"]};line-height:1;">{v["nota"]:.1f}</div>
-            <div style="font-size:1rem;font-weight:600;color:#e8eaf0;margin-top:4px;">{v["etiqueta"]}</div>
-            <div style="font-size:0.75rem;color:#6b7280;margin-top:2px;">sobre 10 · peor de los dos aeropuertos</div>
-        </div>
+        st.caption("Desglose de factores")
 
-        <div style="font-size:0.75rem;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">Desglose de factores</div>
+        st.write(f"Viento (45%) — {sv_avg:.0f}/100")
+        st.progress(int(sv_avg))
 
-        <div style="display:flex;justify-content:space-between;font-size:0.82rem;">
-            <span style="color:#9ca3af;">Viento <span style="color:#6b7280;font-size:0.7rem;">(45%)</span></span>
-            <span style="color:#e8eaf0;font-weight:600;">{sv_avg:.0f}/100</span>
-        </div>
-        {bar(sv_avg, bar_color(sv_avg))}
+        st.write(f"Precipitación (40%) — {sp_avg:.0f}/100")
+        st.progress(int(sp_avg))
 
-        <div style="display:flex;justify-content:space-between;font-size:0.82rem;">
-            <span style="color:#9ca3af;">Precipitacion <span style="color:#6b7280;font-size:0.7rem;">(40%)</span></span>
-            <span style="color:#e8eaf0;font-weight:600;">{sp_avg:.0f}/100</span>
-        </div>
-        {bar(sp_avg, bar_color(sp_avg))}
+        st.write(f"Temperatura (15%) — {st_avg:.0f}/100")
+        st.progress(int(st_avg))
 
-        <div style="display:flex;justify-content:space-between;font-size:0.82rem;">
-            <span style="color:#9ca3af;">Temperatura <span style="color:#6b7280;font-size:0.7rem;">(15%)</span></span>
-            <span style="color:#e8eaf0;font-weight:600;">{st_avg:.0f}/100</span>
-        </div>
-        {bar(st_avg, bar_color(st_avg))}
-
-        <div style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;font-size:0.8rem;">
-            <div style="text-align:center;">
-                <div style="color:#6b7280;">Score {v["iata_orig"]}</div>
-                <div style="color:#e8eaf0;font-weight:700;font-size:1rem;">{score_orig:.0f}</div>
-            </div>
-            <div style="text-align:center;">
-                <div style="color:#6b7280;">Score {v["iata_dest"]}</div>
-                <div style="color:#e8eaf0;font-weight:700;font-size:1rem;">{score_dest:.0f}</div>
-            </div>
-            <div style="text-align:center;">
-                <div style="color:#6b7280;">Score final</div>
-                <div style="color:{v["color"]};font-weight:700;font-size:1rem;">{score_final:.0f}</div>
-            </div>
-        </div>
-    </div>
-    """)
+        st.divider()
+        sc1, sc2, sc3 = st.columns(3)
+        sc1.metric(f"Score {v['iata_orig']}", f"{score_orig:.0f}")
+        sc2.metric(f"Score {v['iata_dest']}", f"{score_dest:.0f}")
+        sc3.metric("Score final", f"{score_final:.0f}")
 
 with col_orig:
-    st.html(f"""
-    <div style="{CARD}">
-        <div style="font-size:0.75rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Clima en origen</div>
-        <div style="font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;color:white;margin-bottom:20px;">
-            {v["origen"]} ({v["iata_orig"]})
-        </div>
+    with st.container(border=True):
+        st.caption("Clima en origen")
+        st.subheader(f"{v['origen']} ({v['iata_orig']})")
 
-        {stat_row("Temperatura", f'{v["temp_orig"]} C')}
-        {stat_row("Viento", f'{v["viento_orig"]} km/h')}
-        {stat_row("Direccion del viento", f'{compass_o} ({int(v["dir_orig"])})')}
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">
-            <span style="color:#6b7280;font-size:0.85rem;">Precipitacion</span>
-            <span style="color:#e8eaf0;font-weight:600;font-size:0.95rem;">{v["precip_orig"]} mm — {pl_o}</span>
-        </div>
+        st.metric("Temperatura", f"{v['temp_orig']} °C")
+        st.metric("Viento", f"{v['viento_orig']} km/h")
+        st.metric("Dirección del viento", f"{compass_o} ({int(v['dir_orig'])}°)")
+        st.metric("Precipitación", f"{v['precip_orig']} mm — {pl_o}")
 
-        <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.06);">
-            <div style="font-size:0.75rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">Puntuacion por factor</div>
-            {score_row("Viento", sv_o)}
-            {score_row("Precipitacion", sp_o)}
-            {score_row("Temperatura", st_o)}
-        </div>
-    </div>
-    """)
+        st.caption("Puntuación por factor")
+        st.write(f"Viento — {sv_o:.0f}/100")
+        st.progress(int(sv_o))
+        st.write(f"Precipitación — {sp_o:.0f}/100")
+        st.progress(int(sp_o))
+        st.write(f"Temperatura — {st_o:.0f}/100")
+        st.progress(int(st_o))
 
 with col_dest:
-    st.html(f"""
-    <div style="{CARD}">
-        <div style="font-size:0.75rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Clima en destino</div>
-        <div style="font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;color:white;margin-bottom:20px;">
-            {v["destino"]} ({v["iata_dest"]})
-        </div>
+    with st.container(border=True):
+        st.caption("Clima en destino")
+        st.subheader(f"{v['destino']} ({v['iata_dest']})")
 
-        {stat_row("Temperatura", f'{v["temp_dest"]} C')}
-        {stat_row("Viento", f'{v["viento_dest"]} km/h')}
-        {stat_row("Direccion del viento", f'{compass_d} ({int(v["dir_dest"])})')}
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">
-            <span style="color:#6b7280;font-size:0.85rem;">Precipitacion</span>
-            <span style="color:#e8eaf0;font-weight:600;font-size:0.95rem;">{v["precip_dest"]} mm — {pl_d}</span>
-        </div>
+        st.metric("Temperatura", f"{v['temp_dest']} °C")
+        st.metric("Viento", f"{v['viento_dest']} km/h")
+        st.metric("Dirección del viento", f"{compass_d} ({int(v['dir_dest'])}°)")
+        st.metric("Precipitación", f"{v['precip_dest']} mm — {pl_d}")
 
-        <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.06);">
-            <div style="font-size:0.75rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">Puntuacion por factor</div>
-            {score_row("Viento", sv_d)}
-            {score_row("Precipitacion", sp_d)}
-            {score_row("Temperatura", st_d)}
-        </div>
-    </div>
-    """)
+        st.caption("Puntuación por factor")
+        st.write(f"Viento — {sv_d:.0f}/100")
+        st.progress(int(sv_d))
+        st.write(f"Precipitación — {sp_d:.0f}/100")
+        st.progress(int(sp_d))
+        st.write(f"Temperatura — {st_d:.0f}/100")
+        st.progress(int(st_d))
 
-# ─── SECCIÓN 3: RECOMENDACIÓN ──────────────────────────────────────────────────
-st.html(f"""
-<div style="border-radius:14px;padding:24px 28px;border:1px solid {rc_b};background:{rc_bg};margin-top:8px;">
-    <div style="font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;color:white;margin-bottom:8px;">
-        Recomendacion — {rc_title}
-    </div>
-    <div style="color:#d1d5db;font-size:0.92rem;line-height:1.7;">{rc_text}</div>
-    <div style="margin-top:12px;font-size:0.75rem;color:#6b7280;">
-        Score final: peor valor entre origen y destino (criterio conservador).
-        Factores: viento (45%), precipitacion (40%), temperatura (15%).
-        El precio es una estimacion basada en ruta, hora y aerolinea.
-    </div>
-</div>
-""")
+# --- SECCIÓN 3: GRÁFICO COMPARATIVO POR HORA ---
+st.divider()
+st.subheader("Comparativa de condiciones por horario")
+st.caption(f"Puntuación estimada para cada hora del día en la ruta {v['iata_orig']} → {v['iata_dest']} · {v['fecha']}")
 
-st.markdown("")
-if st.button("Volver a resultados", key="volver_bottom"):
+@st.cache_data(ttl=3600)
+def load_df():
+    return load_weather_csv()
+
+df_w = load_df()
+fecha_dt = datetime.date.fromisoformat(v["fecha"])
+
+horas, scores_o, scores_d, scores_final = [], [], [], []
+for h in range(24):
+    wo = get_weather_at(df_w, v["origen"], fecha_dt, h)
+    wd = get_weather_at(df_w, v["destino"], fecha_dt, (h + 1) % 24)
+    if wo and wd:
+        so = score_wind(wo["wind_speed"]) * 0.45 + score_precipitation(wo["precipitation"]) * 0.40 + score_temperature(wo["temperature"]) * 0.15
+        sd = score_wind(wd["wind_speed"]) * 0.45 + score_precipitation(wd["precipitation"]) * 0.40 + score_temperature(wd["temperature"]) * 0.15
+        horas.append(h)
+        scores_o.append(round(so / 10, 1))
+        scores_d.append(round(sd / 10, 1))
+        scores_final.append(round(min(so, sd) / 10, 1))
+
+if horas:
+    hora_actual = v["hora_int"]
+
+    matplotlib.rcParams.update({"text.color": "#e8eaf0", "axes.labelcolor": "#9ca3af",
+                                  "xtick.color": "#9ca3af", "ytick.color": "#9ca3af"})
+
+    fig, ax = plt.subplots(figsize=(12, 4))
+    fig.patch.set_facecolor("#0d1117")
+    ax.set_facecolor("#0d1117")
+
+    ax.plot(horas, scores_o,    color="#3b82f6", linewidth=2, label=f"Origen ({v['iata_orig']})", marker="o", markersize=3)
+    ax.plot(horas, scores_d,    color="#8b5cf6", linewidth=2, label=f"Destino ({v['iata_dest']})", marker="o", markersize=3)
+    ax.plot(horas, scores_final, color="#22c55e", linewidth=2.5, label="Score final", marker="o", markersize=3, linestyle="--")
+
+    # Línea vertical en la hora del vuelo seleccionado
+    if hora_actual in horas:
+        idx = horas.index(hora_actual)
+        ax.axvline(x=hora_actual, color="#f59e0b", linewidth=1.5, linestyle=":", alpha=0.9)
+        ax.scatter([hora_actual], [scores_final[idx]], color="#f59e0b", s=80, zorder=5)
+        ax.annotate(f"  {v['hora_salida']}\n  {scores_final[idx]}", xy=(hora_actual, scores_final[idx]),
+                    color="#f59e0b", fontsize=8.5, va="bottom")
+
+    ax.set_xlim(0, 23)
+    ax.set_ylim(0, 10)
+    ax.set_xticks(range(0, 24, 2))
+    ax.set_xticklabels([f"{h:02d}h" for h in range(0, 24, 2)], fontsize=8)
+    ax.set_yticks(range(0, 11, 2))
+    ax.set_ylabel("Puntuación (0–10)", fontsize=9)
+    ax.spines[["top", "right"]].set_visible(False)
+    ax.spines[["left", "bottom"]].set_color("#2e2e2e")
+    ax.grid(axis="y", color="#1e293b", linewidth=0.8)
+    ax.legend(fontsize=8.5, facecolor="#0d1117", edgecolor="#2e2e2e", labelcolor="#e8eaf0")
+
+    st.pyplot(fig, use_container_width=True)
+    plt.close(fig)
+
+# --- SECCIÓN 4: RECOMENDACIÓN ---
+nota = v["nota"]
+if nota >= 9.0:
+    st.success("**Condiciones excepcionales** — Mínimas turbulencias esperadas, buena visibilidad y temperaturas confortables en ambos aeropuertos. Es un momento ideal para volar.")
+elif nota >= 7.5:
+    st.info("**Buenas condiciones** — El trayecto debería transcurrir con normalidad. Las condiciones meteorológicas son favorables en origen y destino.")
+elif nota >= 5.5:
+    st.warning("**Condiciones moderadas** — Es posible que haya algo de turbulencia o lluvia ligera. Llega con tiempo y consulta el estado del vuelo antes de salir.")
+else:
+    st.error("**Condiciones adversas** — Se detectan condiciones desfavorables en alguno de los aeropuertos. Consulta el estado actualizado y contacta con la aerolínea si tienes dudas.")
+
+st.caption("Score final: peor valor entre origen y destino (criterio conservador). Factores: viento (45%), precipitación (40%), temperatura (15%). El precio es una estimación basada en ruta, hora y aerolínea.")
+
+st.write("")
+if st.button("← Volver a resultados", key="volver_bottom"):
     st.switch_page("app.py")

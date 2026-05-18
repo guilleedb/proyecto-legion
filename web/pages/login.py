@@ -5,9 +5,6 @@ import os
 
 st.set_page_config(page_title="Acceso · Legion Flight", layout="centered")
 
-# ─────────────────────────────────────────────
-#  ALMACENAMIENTO DE USUARIOS (JSON local)
-# ─────────────────────────────────────────────
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "usuarios.json")
 
 def cargar_usuarios():
@@ -39,14 +36,10 @@ def login(username, password):
         return False, "Contraseña incorrecta."
     return True, username
 
-
-# ─────────────────────────────────────────────
-#  CSS
-# ─────────────────────────────────────────────
+# CSS mínimo: fondo oscuro, ocultar chrome, botones
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
-
     *, *::before, *::after { box-sizing: border-box; }
     html, body, [data-testid="stAppViewContainer"] {
         font-family: 'Inter', sans-serif;
@@ -56,97 +49,45 @@ st.markdown("""
     #MainMenu {visibility: hidden;}
     footer     {visibility: hidden;}
     header     {visibility: hidden;}
-
-    [data-testid="stSidebar"]       { display: none !important; }
+    [data-testid="stSidebar"]        { display: none !important; }
     [data-testid="collapsedControl"] { display: none !important; }
-
     .block-container { padding-top: 3rem !important; max-width: 480px !important; }
-
-    .auth-logo {
-        text-align: center;
-        font-family: 'Syne', sans-serif;
-        font-size: 2rem; font-weight: 800;
-        color: white; margin-bottom: 0.25rem;
-    }
-    .auth-logo .dot { color: #3b82f6; }
-    .auth-subtitle {
-        text-align: center; color: #6b7280;
-        font-size: 0.9rem; margin-bottom: 2.5rem;
-    }
-
-    div.stTextInput > label { color: #9ca3af !important; font-size: 0.82rem !important; }
-    div.stTextInput > div > input {
-        background: rgba(255,255,255,0.05) !important;
-        border: 1px solid rgba(255,255,255,0.1) !important;
-        border-radius: 10px !important; color: white !important;
-        padding: 0.75rem 1rem !important;
-    }
-    div.stTextInput > div > input:focus {
-        border-color: #3b82f6 !important;
-        box-shadow: 0 0 0 3px rgba(59,130,246,0.15) !important;
-    }
 
     div.stButton > button {
         width: 100% !important; height: 3.2em !important;
-        background: linear-gradient(135deg, #2563eb, #3b82f6) !important;
+        background: #2563eb !important;
         color: white !important; font-weight: 700 !important;
         border-radius: 10px !important; border: none !important;
         font-family: 'Syne', sans-serif !important;
-        font-size: 1rem !important; letter-spacing: 0.02em !important;
-        box-shadow: 0 4px 20px rgba(37,99,235,0.35) !important;
-        transition: all 0.25s ease !important;
+        font-size: 1rem !important;
         margin-top: 0.5rem !important;
     }
-    div.stButton > button:hover {
-        background: linear-gradient(135deg, #1d4ed8, #2563eb) !important;
-        transform: translateY(-2px) !important;
-        box-shadow: 0 8px 28px rgba(37,99,235,0.5) !important;
-    }
+    div.stButton > button:hover { background: #1d4ed8 !important; }
+    div.stTextInput > div > input:focus { border-color: #3b82f6 !important; }
 </style>
 """, unsafe_allow_html=True)
 
-# ─────────────────────────────────────────────
-#  REDIRECT SI YA ESTÁ LOGUEADO
-# ─────────────────────────────────────────────
+# --- REDIRECT SI YA ESTÁ LOGUEADO ---
 if st.session_state.get("usuario"):
     st.success(f"Ya has iniciado sesión como **{st.session_state['usuario']}**")
     if st.button("← Volver al inicio"):
         st.switch_page("app.py")
     st.stop()
 
-# ─────────────────────────────────────────────
-#  LOGO
-# ─────────────────────────────────────────────
-st.markdown('<div class="auth-logo">Legion<span class="dot">.</span>Flight</div>', unsafe_allow_html=True)
-st.markdown('<div class="auth-subtitle">Tu compañero meteorológico para volar</div>', unsafe_allow_html=True)
+# --- LOGO ---
+st.title("Legion.Flight")
+st.caption("Tu compañero meteorológico para volar")
 
-# ─────────────────────────────────────────────
-#  TABS LOGIN / REGISTRO
-# ─────────────────────────────────────────────
-if "auth_tab" not in st.session_state:
-    st.session_state["auth_tab"] = "login"
+st.write("")
 
-col_log, col_reg = st.columns(2)
-with col_log:
-    if st.button("Iniciar sesión", key="tab_login", use_container_width=True):
-        st.session_state["auth_tab"] = "login"
-with col_reg:
-    if st.button("Crear cuenta", key="tab_reg", use_container_width=True):
-        st.session_state["auth_tab"] = "registro"
+# --- TABS ---
+tab_login, tab_registro = st.tabs(["Iniciar sesión", "Crear cuenta"])
 
-st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
-
-# ─────────────────────────────────────────────
-#  FORMULARIO LOGIN
-# ─────────────────────────────────────────────
-if st.session_state["auth_tab"] == "login":
-    st.markdown("### Iniciar sesión")
-    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-
+with tab_login:
     with st.form("form_login"):
         username_l = st.text_input("Nombre de usuario", placeholder="tu_usuario")
         password_l = st.text_input("Contraseña", type="password", placeholder="••••••••")
-        submit_l   = st.form_submit_button("Entrar →")
+        submit_l   = st.form_submit_button("Entrar →", use_container_width=True)
 
     if submit_l:
         if not username_l or not password_l:
@@ -163,18 +104,12 @@ if st.session_state["auth_tab"] == "login":
             else:
                 st.error(resultado)
 
-# ─────────────────────────────────────────────
-#  FORMULARIO REGISTRO
-# ─────────────────────────────────────────────
-else:
-    st.markdown("### Crear cuenta nueva")
-    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-
+with tab_registro:
     with st.form("form_registro"):
         username_r = st.text_input("Nombre de usuario", placeholder="tu_usuario")
         password_r = st.text_input("Contraseña", type="password", placeholder="Mínimo 6 caracteres")
         confirm_r  = st.text_input("Confirmar contraseña", type="password", placeholder="Repite la contraseña")
-        submit_r   = st.form_submit_button("Crear cuenta →")
+        submit_r   = st.form_submit_button("Crear cuenta →", use_container_width=True)
 
     if submit_r:
         if not username_r or not password_r or not confirm_r:
@@ -188,12 +123,10 @@ else:
         else:
             ok, mensaje = registrar(username_r, password_r)
             if ok:
-                st.success(f"{mensaje} Ahora inicia sesión.")
-                st.session_state["auth_tab"] = "login"
-                st.rerun()
+                st.success(f"{mensaje} Ahora inicia sesión en la pestaña de arriba.")
             else:
                 st.error(mensaje)
 
-st.markdown("---")
+st.divider()
 if st.button("← Volver al inicio sin iniciar sesión", use_container_width=True):
     st.switch_page("app.py")
