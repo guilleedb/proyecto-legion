@@ -23,21 +23,21 @@ def guardar_usuarios(usuarios):
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
-def registrar(nombre, email, password):
+def registrar(username, password):
     usuarios = cargar_usuarios()
-    if email in usuarios:
-        return False, "Este email ya está registrado."
-    usuarios[email] = {"nombre": nombre, "password": hash_password(password)}
+    if username in usuarios:
+        return False, "Este nombre de usuario ya está en uso."
+    usuarios[username] = {"password": hash_password(password), "favoritos": []}
     guardar_usuarios(usuarios)
     return True, "Cuenta creada correctamente."
 
-def login(email, password):
+def login(username, password):
     usuarios = cargar_usuarios()
-    if email not in usuarios:
-        return False, "Email no encontrado."
-    if usuarios[email]["password"] != hash_password(password):
+    if username not in usuarios:
+        return False, "Nombre de usuario no encontrado."
+    if usuarios[username]["password"] != hash_password(password):
         return False, "Contraseña incorrecta."
-    return True, usuarios[email]["nombre"]
+    return True, username
 
 
 # ─────────────────────────────────────────────
@@ -57,6 +57,9 @@ st.markdown("""
     footer     {visibility: hidden;}
     header     {visibility: hidden;}
 
+    [data-testid="stSidebar"]       { display: none !important; }
+    [data-testid="collapsedControl"] { display: none !important; }
+
     .block-container { padding-top: 3rem !important; max-width: 480px !important; }
 
     .auth-logo {
@@ -70,25 +73,6 @@ st.markdown("""
         text-align: center; color: #6b7280;
         font-size: 0.9rem; margin-bottom: 2.5rem;
     }
-
-    .auth-card {
-        background: rgba(255,255,255,0.03);
-        border: 1px solid rgba(255,255,255,0.08);
-        border-radius: 20px; padding: 2.5rem 2rem;
-    }
-
-    .tab-selector {
-        display: flex; background: rgba(255,255,255,0.04);
-        border-radius: 12px; padding: 4px; margin-bottom: 2rem; gap: 4px;
-    }
-    .tab-btn {
-        flex: 1; text-align: center; padding: 0.6rem;
-        border-radius: 10px; cursor: pointer;
-        font-size: 0.9rem; font-weight: 600; transition: 0.2s;
-        font-family: 'Syne', sans-serif;
-    }
-    .tab-btn.active { background: #2563eb; color: white; }
-    .tab-btn.inactive { color: #6b7280; }
 
     div.stTextInput > label { color: #9ca3af !important; font-size: 0.82rem !important; }
     div.stTextInput > div > input {
@@ -118,23 +102,6 @@ st.markdown("""
         transform: translateY(-2px) !important;
         box-shadow: 0 8px 28px rgba(37,99,235,0.5) !important;
     }
-
-    .divider {
-        display: flex; align-items: center; gap: 1rem;
-        margin: 1.5rem 0; color: #374151;
-        font-size: 0.8rem;
-    }
-    .divider::before, .divider::after {
-        content: ''; flex: 1;
-        height: 1px; background: rgba(255,255,255,0.07);
-    }
-
-    .back-link {
-        text-align: center; margin-top: 1.5rem;
-        font-size: 0.85rem; color: #6b7280;
-    }
-    .back-link a { color: #3b82f6; text-decoration: none; }
-    .back-link a:hover { text-decoration: underline; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -142,7 +109,7 @@ st.markdown("""
 #  REDIRECT SI YA ESTÁ LOGUEADO
 # ─────────────────────────────────────────────
 if st.session_state.get("usuario"):
-    st.success(f"✅ Ya has iniciado sesión como **{st.session_state['usuario']}**")
+    st.success(f"Ya has iniciado sesión como **{st.session_state['usuario']}**")
     if st.button("← Volver al inicio"):
         st.switch_page("app.py")
     st.stop()
@@ -150,7 +117,7 @@ if st.session_state.get("usuario"):
 # ─────────────────────────────────────────────
 #  LOGO
 # ─────────────────────────────────────────────
-st.markdown('<div class="auth-logo">✈️ Legion<span class="dot">.</span>Flight</div>', unsafe_allow_html=True)
+st.markdown('<div class="auth-logo">Legion<span class="dot">.</span>Flight</div>', unsafe_allow_html=True)
 st.markdown('<div class="auth-subtitle">Tu compañero meteorológico para volar</div>', unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────
@@ -161,10 +128,10 @@ if "auth_tab" not in st.session_state:
 
 col_log, col_reg = st.columns(2)
 with col_log:
-    if st.button("🔑 Iniciar sesión", key="tab_login", use_container_width=True):
+    if st.button("Iniciar sesión", key="tab_login", use_container_width=True):
         st.session_state["auth_tab"] = "login"
 with col_reg:
-    if st.button("✨ Crear cuenta", key="tab_reg", use_container_width=True):
+    if st.button("Crear cuenta", key="tab_reg", use_container_width=True):
         st.session_state["auth_tab"] = "registro"
 
 st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
@@ -173,24 +140,24 @@ st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 #  FORMULARIO LOGIN
 # ─────────────────────────────────────────────
 if st.session_state["auth_tab"] == "login":
-    st.markdown("### 🔑 Iniciar sesión")
+    st.markdown("### Iniciar sesión")
     st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
     with st.form("form_login"):
-        email_l    = st.text_input("Correo electrónico", placeholder="tu@email.com")
+        username_l = st.text_input("Nombre de usuario", placeholder="tu_usuario")
         password_l = st.text_input("Contraseña", type="password", placeholder="••••••••")
         submit_l   = st.form_submit_button("Entrar →")
 
     if submit_l:
-        if not email_l or not password_l:
+        if not username_l or not password_l:
             st.error("Rellena todos los campos.")
         else:
-            ok, resultado = login(email_l, password_l)
+            ok, resultado = login(username_l, password_l)
             if ok:
                 st.session_state["usuario"] = resultado
-                if "favoritos" not in st.session_state:
-                    st.session_state["favoritos"] = []
-                st.success(f"✅ ¡Bienvenido, {resultado}!")
+                usuarios_data = cargar_usuarios()
+                st.session_state["favoritos"] = usuarios_data.get(resultado, {}).get("favoritos", [])
+                st.success(f"Bienvenido, {resultado}!")
                 st.balloons()
                 st.switch_page("app.py")
             else:
@@ -200,29 +167,28 @@ if st.session_state["auth_tab"] == "login":
 #  FORMULARIO REGISTRO
 # ─────────────────────────────────────────────
 else:
-    st.markdown("### ✨ Crear cuenta nueva")
+    st.markdown("### Crear cuenta nueva")
     st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
     with st.form("form_registro"):
-        nombre_r   = st.text_input("Nombre", placeholder="Tu nombre")
-        email_r    = st.text_input("Correo electrónico", placeholder="tu@email.com")
+        username_r = st.text_input("Nombre de usuario", placeholder="tu_usuario")
         password_r = st.text_input("Contraseña", type="password", placeholder="Mínimo 6 caracteres")
         confirm_r  = st.text_input("Confirmar contraseña", type="password", placeholder="Repite la contraseña")
         submit_r   = st.form_submit_button("Crear cuenta →")
 
     if submit_r:
-        if not nombre_r or not email_r or not password_r or not confirm_r:
+        if not username_r or not password_r or not confirm_r:
             st.error("Rellena todos los campos.")
+        elif len(username_r) < 3:
+            st.error("El nombre de usuario debe tener al menos 3 caracteres.")
         elif len(password_r) < 6:
             st.error("La contraseña debe tener al menos 6 caracteres.")
         elif password_r != confirm_r:
             st.error("Las contraseñas no coinciden.")
-        elif "@" not in email_r:
-            st.error("Introduce un email válido.")
         else:
-            ok, mensaje = registrar(nombre_r, email_r, password_r)
+            ok, mensaje = registrar(username_r, password_r)
             if ok:
-                st.success(f"✅ {mensaje} Ahora inicia sesión.")
+                st.success(f"{mensaje} Ahora inicia sesión.")
                 st.session_state["auth_tab"] = "login"
                 st.rerun()
             else:
