@@ -824,8 +824,26 @@ st.write("¿Tienes dudas? Escríbenos a **contacto@legionflight.com**")
 # ─────────────────────────────────────────────
 st.markdown("---")
 st.markdown("## FAQ")
-st.write("""
-- ¿De dónde salen los datos? Del servicio meteorológico Open-Meteo
-- ¿Qué variables se analizan? Temperatura, viento y precipitación
-- ¿Puedo ver previsión a más de 7 días? De momento cubrimos los próximos 7 días
-""")
+
+faq_items = [
+    ("¿De dónde salen los datos meteorológicos?", "Utilizamos Open-Meteo, un servicio meteorológico de código abierto que combina modelos numéricos de alta precisión como ECMWF y GFS."),
+    ("¿Qué variables meteorológicas se analizan?", "Analizamos tres factores clave: temperatura, velocidad del viento y precipitación. Cada uno tiene un peso distinto en la puntuación final del vuelo."),
+    ("¿Cómo se calcula la puntuación del vuelo?", "La puntuación combina el clima en origen y destino. El viento tiene un peso del 45%, la precipitación del 40% y la temperatura del 15%. Se aplica el peor de los dos aeropuertos."),
+    ("¿Hasta cuándo puedo consultar previsiones?", "Cubrimos aproximadamente 30 días hacia adelante con datos reales. Para fechas más lejanas usamos datos históricos del mismo periodo del año anterior como referencia."),
+    ("¿Los precios mostrados son reales?", "Los precios son estimaciones calculadas algorítmicamente según ruta, hora del vuelo y aerolínea. No representan tarifas reales ni están vinculados a ningún sistema de reservas."),
+]
+
+for pregunta, respuesta in faq_items:
+    st.markdown(f"""
+    <div style="
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.07);
+        border-left: 3px solid #2563eb;
+        border-radius: 14px;
+        padding: 1.4rem 1.6rem;
+        margin-bottom: 1rem;
+    ">
+        <div style="font-family:'Syne',sans-serif;font-size:0.95rem;font-weight:700;color:#e8eaf0;margin-bottom:0.6rem;">{pregunta}</div>
+        <div style="font-size:0.88rem;color:#9ca3af;line-height:1.65;">{respuesta}</div>
+    </div>
+    """, unsafe_allow_html=True)

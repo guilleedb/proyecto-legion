@@ -95,12 +95,12 @@ def precip_label(mm):
 
 def estado_color(estado):
     tabla = {
-        "scheduled": ("background:#1d4ed8;color:#dbeafe;",),
+        "scheduled": ("background:#2563eb;color:#dbeafe;",),
         "active":    ("background:#15803d;color:#dcfce7;",),
         "landed":    ("background:#374151;color:#f3f4f6;",),
         "cancelled": ("background:#dc2626;color:#fee2e2;",),
         "incident":  ("background:#92400e;color:#fef3c7;",),
-        "diverted":  ("background:#7c3aed;color:#ede9fe;",),
+        "diverted":  ("background:#2563eb;color:#ede9fe;",),
     }
     entry = tabla.get(str(estado).lower())
     return entry[0] if entry else "background:#374151;color:#f3f4f6;"
@@ -164,8 +164,8 @@ st.html(f"""
 
         <div style="text-align:center;">
             <div style="font-size:0.75rem; color:#6b7280; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px;">Aerolinea</div>
-            <div style="font-size:1rem; font-weight:600; color:#e8eaf0;">{v["linea"]}</div>
-            <div style="font-size:0.85rem; color:#9ca3af; margin-top:2px;">{v["vuelo"]}</div>
+            <div style="font-family:'Syne',sans-serif; font-size:1.2rem; font-weight:700; color:white; line-height:1.1;">{v["linea"]}</div>
+            <div style="font-size:0.85rem; color:#9ca3af; margin-top:4px;">{v["vuelo"]}</div>
         </div>
 
         <div style="text-align:center;">
@@ -175,7 +175,7 @@ st.html(f"""
 
         <div style="text-align:center;">
             <div style="font-size:0.75rem; color:#6b7280; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px;">Precio estimado</div>
-            <div style="font-family:'Syne',sans-serif; font-size:1.4rem; font-weight:700; color:#e8eaf0;">{precio_str}</div>
+            <div style="font-family:'Syne',sans-serif; font-size:1.2rem; font-weight:700; color:white; line-height:1.1;">{precio_str}</div>
             <div style="font-size:0.7rem; color:#6b7280;">estimacion sin garantia</div>
         </div>
 

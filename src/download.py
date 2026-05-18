@@ -1,7 +1,6 @@
 import os
 import json
 import requests
-from datetime import datetime
 
 from config import BASE_URL, CITIES, WEATHER_PATH
 

@@ -1,41 +1,46 @@
 def score_wind(speed_kmh):
     """Calcula la puntuación del viento (0-100)"""
     speed = float(speed_kmh)
-    if speed <= 15: return 100
-    elif speed <= 45: return max(0, 100 - (speed - 15) * 3.33)
+    if speed <= 5: return 100
+    elif speed <= 15: return 100 - (speed - 5) * 4      # 100→60
+    elif speed <= 35: return max(0, 60 - (speed - 15) * 3)  # 60→0
     else: return 0
 
 def score_precipitation(mm):
     """Calcula la puntuación de la lluvia (0-100)"""
     precip = float(mm)
     if precip == 0: return 100
-    elif precip <= 2: return max(0, 100 - (precip * 40))
+    elif precip <= 1: return max(0, 100 - precip * 40)  # 100→60
+    elif precip <= 5: return max(0, 60 - (precip - 1) * 15)  # 60→0
     else: return 0
 
 def score_temperature(celsius):
     """Calcula la puntuación de la temperatura (0-100)"""
     temp = float(celsius)
-    if 15 <= temp <= 28: return 100
-    elif temp < 15: return max(50, 100 - (15 - temp) * 5)
-    else: return max(50, 100 - (temp - 28) * 5)
+    if 20 <= temp <= 25: return 100
+    elif 15 <= temp < 20: return 50 + (temp - 15) * 10   # 50→100
+    elif 25 < temp <= 33: return max(0, 100 - (temp - 25) * 8)  # 100→36
+    elif 10 <= temp < 15: return max(0, 50 - (15 - temp) * 5)
+    else: return max(0, 36 - (temp - 33) * 4)
 
 def composite_score(wind, precip, temp):
     """Combina los scores con pesos"""
-    return (wind * 0.45) + (precip * 0.40) + (temp * 0.15)
+    return min(100.0, (wind * 0.40) + (precip * 0.30) + (temp * 0.30))
 
 def score_to_rating(score):
     """
     Convierte el score 0-100 en el formato que app.py necesita:
     (Nota 0-10, Etiqueta, Color Hex)
     """
-    if score >= 85:
-        return 9.5, "Excelente", "#28a745"  # Verde
-    elif score >= 70:
-        return 7.5, "Bueno", "#b8d434"      # Lima/Verde claro
-    elif score >= 55:
-        return 5.5, "Regular", "#ffc107"    # Amarillo/Naranja
+    nota = round(score / 10, 1)
+    if score >= 80:
+        return nota, "Excelente", "#22c55e"
+    elif score >= 60:
+        return nota, "Bueno", "#84cc16"
+    elif score >= 40:
+        return nota, "Regular", "#f59e0b"
     else:
-        return 3.0, "Malo", "#dc3545"       # Rojo
+        return nota, "Malo", "#ef4444"
 
 def score_flight(origin_weather, dest_weather):
     """
@@ -56,8 +61,7 @@ def score_flight(origin_weather, dest_weather):
 
         # La nota final es la peor de las dos (pesimismo de seguridad)
         final_score = min(res_origin, res_dest)
-        
-        # Obtener el pack de datos final
+
         nota, etiqueta, color = score_to_rating(final_score)
 
         return {
@@ -65,8 +69,7 @@ def score_flight(origin_weather, dest_weather):
             "label": etiqueta,
             "color": color
         }
-    except Exception as e:
-        # Si algo falla catastróficamente, devolvemos un error visual
+    except Exception:
         return {
             "rating": 0.0,
             "label": "Error",
