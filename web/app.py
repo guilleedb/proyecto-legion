@@ -103,10 +103,10 @@ def load_data():
 df_weather = load_data()
 available_dates = get_available_dates(df_weather)
 
-# --- HERO WEATHER (Madrid Barajas, primera fecha disponible) ---
+# --- HERO WEATHER (London Gatwick, primera fecha disponible) ---
 hero_weather = None
 for try_hour in [12, 9, 15, 6, 0]:
-    hero_weather = get_weather_at(df_weather, "Madrid Barajas", available_dates[0], try_hour)
+    hero_weather = get_weather_at(df_weather, "London Gatwick", available_dates[0], try_hour)
     if hero_weather:
         break
 
@@ -149,7 +149,7 @@ st.markdown("""
     }
     .navbar-logo {
         display: flex; align-items: center; gap: 0.5rem;
-        font-size: 1.3rem; font-weight: 700; color: #fff;
+        font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 800; color: #fff;
         font-family: 'Syne', sans-serif;
     }
     .navbar-links {
@@ -236,7 +236,7 @@ st.markdown("""
 </style>
 
 <div class="navbar">
-    <div class="navbar-logo">✈️ Legion Flight</div>
+    <div class="navbar-logo">Legion<span style="color:#3b82f6;">.</span>Flight</div>
     <div class="navbar-links">
         <a href="#buscar-vuelo">Buscar vuelo</a>
         <a href="#favoritos">Favoritos</a>
@@ -250,7 +250,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────
-# HERO (datos reales de Madrid Barajas)
+# HERO (datos reales de London Gatwick)
 # ─────────────────────────────────────────────
 
 hero_component = f"""<!DOCTYPE html>
@@ -399,7 +399,7 @@ html, body {{ width: 100%; height: 100%; overflow: hidden; background: transpare
 
     <div class="hero-live">
         <span class="hero-live-dot"></span>
-        Live &middot; Madrid Barajas
+        Live &middot; London Gatwick
     </div>
 
     <div class="hero-main">
@@ -411,8 +411,8 @@ html, body {{ width: 100%; height: 100%; overflow: hidden; background: transpare
     <div class="hero-panel">
         <div class="hp-header">
             <div>
-                <div class="hp-title">Madrid Barajas</div>
-                <div class="hp-subtitle">MAD &middot; Datos actuales</div>
+                <div class="hp-title">London Gatwick</div>
+                <div class="hp-subtitle">LGW &middot; Datos actuales</div>
             </div>
             <div class="hp-live-tag">Live</div>
         </div>
@@ -441,7 +441,7 @@ html, body {{ width: 100%; height: 100%; overflow: hidden; background: transpare
     <div class="hero-strip">
         <div class="hs-item">
             <div class="hs-label">Aeropuerto</div>
-            <div class="hs-value hs-accent">MAD</div>
+            <div class="hs-value hs-accent">LGW</div>
         </div>
         <div class="hs-item">
             <div class="hs-label">Temperatura</div>
@@ -826,11 +826,10 @@ st.markdown("---")
 st.markdown("## FAQ")
 
 faq_items = [
-    ("¿De dónde salen los datos meteorológicos?", "Utilizamos Open-Meteo, un servicio meteorológico de código abierto que combina modelos numéricos de alta precisión como ECMWF y GFS."),
+    ("¿De dónde salen los datos meteorológicos?", "Utilizamos Open-Meteo, un servicio meteorológico de código abierto que combina modelos numéricos de alta precisión como el European Centre for Medium-Range Weather Forecasts (ECMWF) y el Global Forecast System (GFS)."),
     ("¿Qué variables meteorológicas se analizan?", "Analizamos tres factores clave: temperatura, velocidad del viento y precipitación. Cada uno tiene un peso distinto en la puntuación final del vuelo."),
-    ("¿Cómo se calcula la puntuación del vuelo?", "La puntuación combina el clima en origen y destino. El viento tiene un peso del 45%, la precipitación del 40% y la temperatura del 15%. Se aplica el peor de los dos aeropuertos."),
-    ("¿Hasta cuándo puedo consultar previsiones?", "Cubrimos aproximadamente 30 días hacia adelante con datos reales. Para fechas más lejanas usamos datos históricos del mismo periodo del año anterior como referencia."),
-    ("¿Los precios mostrados son reales?", "Los precios son estimaciones calculadas algorítmicamente según ruta, hora del vuelo y aerolínea. No representan tarifas reales ni están vinculados a ningún sistema de reservas."),
+    ("¿Cómo se calcula la puntuación del vuelo?", "Utilizamos un algoritmo propio que combina distintas variables meteorológicas en origen y destino para generar una puntuación del 0 al 10. El resultado refleja las condiciones globales del trayecto."),
+    ("¿Hasta cuándo puedo consultar previsiones?", "Cubrimos aproximadamente 30 días hacia adelante con datos reales."),
 ]
 
 for pregunta, respuesta in faq_items:
